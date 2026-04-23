@@ -1,0 +1,10 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Acme.Testing", "src\Acme.Testing\Acme.Testing.csproj", "{FFFFFFFF-0006-0006-0006-000000000001}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Acme.TestHost", "src\Acme.TestHost\Acme.TestHost.csproj", "{FFFFFFFF-0006-0006-0006-000000000002}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Acme.Testing.SmokeTests", "tests\Acme.Testing.SmokeTests\Acme.Testing.SmokeTests.csproj", "{FFFFFFFF-0006-0006-0006-000000000003}"
+EndProject
+Global
+EndGlobal

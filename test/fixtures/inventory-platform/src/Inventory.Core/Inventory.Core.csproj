@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Acme.Common" Version="1.2.3" />
+    <PackageReference Include="Acme.Contracts" Version="2.1.0" />
+  </ItemGroup>
+
+</Project>

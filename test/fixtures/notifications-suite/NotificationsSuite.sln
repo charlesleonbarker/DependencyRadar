@@ -1,0 +1,12 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Notifications.Core", "src\Notifications.Core\Notifications.Core.csproj", "{22222222-0008-0008-0008-000000000001}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Notifications.Api", "src\Notifications.Api\Notifications.Api.csproj", "{22222222-0008-0008-0008-000000000002}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Notifications.Sender", "src\Notifications.Sender\Notifications.Sender.csproj", "{22222222-0008-0008-0008-000000000003}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Notifications.Core.Tests", "tests\Notifications.Core.Tests\Notifications.Core.Tests.csproj", "{22222222-0008-0008-0008-000000000004}"
+EndProject
+Global
+EndGlobal

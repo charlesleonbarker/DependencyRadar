@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageId>Acme.FeatureFlags</PackageId>
+    <Version>1.4.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Acme.Contracts\Acme.Contracts.csproj" />
+    <PackageReference Include="Acme.Logging" Version="0.9.0" />
+  </ItemGroup>
+
+</Project>

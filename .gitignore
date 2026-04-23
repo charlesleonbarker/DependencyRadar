@@ -1,0 +1,16 @@
+# .NET build output
+bin/
+obj/
+
+# Scanner output artifacts
+depmap.html
+graph.json
+
+# IDE
+.vs/
+.idea/
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
