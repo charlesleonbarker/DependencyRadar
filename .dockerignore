@@ -4,4 +4,6 @@
 .run
 **/bin
 **/obj
+**/node_modules
+src/Depmap.Web/dist
 **/.DS_Store

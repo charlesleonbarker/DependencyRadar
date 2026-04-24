@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration name="Depmap Full Stack (Fixtures)" type="DotNetProject" factoryName=".NET Project">
+  <configuration name="Depmap Backend (Fixtures)" type="DotNetProject" factoryName=".NET Project">
     <option name="EXE_PATH" value="" />
     <option name="PROGRAM_PARAMETERS" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Depmap.Service" />
@@ -18,7 +18,7 @@
     <option name="PROJECT_TFM" value="" />
     <envs>
       <env name="ASPNETCORE_ENVIRONMENT" value="Development" />
-      <env name="ASPNETCORE_URLS" value="http://localhost:5000" />
+      <env name="ASPNETCORE_URLS" value="http://localhost:5001" />
     </envs>
     <method v="2">
       <option name="Build" />

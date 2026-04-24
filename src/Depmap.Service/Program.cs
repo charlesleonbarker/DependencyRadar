@@ -8,12 +8,30 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<MonitorOptions>(builder.Configuration.GetSection(MonitorOptions.SectionName));
 builder.Services.AddSingleton<DepmapScanner>();
 builder.Services.AddSingleton<MonitorState>();
-builder.Services.AddHostedService<FolderMonitorService>();
+builder.Services.AddSingleton<FolderMonitorService>();
+builder.Services.AddSingleton<IMonitorControl>(static services => services.GetRequiredService<FolderMonitorService>());
+builder.Services.AddHostedService(static services => services.GetRequiredService<FolderMonitorService>());
+builder.Services.AddCors(options =>
+{
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+    options.AddDefaultPolicy(policy =>
+    {
+        if (allowedOrigins is { Length: > 0 })
+        {
+            policy.WithOrigins(allowedOrigins);
+        }
+        else
+        {
+            policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173", "http://127.0.0.1:4173");
+        }
+
+        policy.AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
-
-app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseCors();
 
 app.MapGet("/api/status", (MonitorState state) => Results.Ok(state.GetStatus()));
 
@@ -22,6 +40,12 @@ app.MapGet("/api/graph", (MonitorState state) =>
     return state.TryGetGraphJson(out var graphJson)
         ? Results.Content(graphJson, "application/json")
         : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+});
+
+app.MapPost("/api/rescan", async (IMonitorControl control, MonitorState state, CancellationToken cancellationToken) =>
+{
+    await control.RequestRescanAsync(cancellationToken);
+    return Results.Ok(state.GetStatus());
 });
 
 app.MapGet("/api/updates", async (HttpContext context, MonitorState state) =>

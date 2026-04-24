@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace Depmap.Service.Services;
 
-public sealed class FolderMonitorService : BackgroundService
+public sealed class FolderMonitorService : BackgroundService, IMonitorControl
 {
     private readonly DepmapScanner _scanner;
     private readonly MonitorState _state;
@@ -12,6 +12,7 @@ public sealed class FolderMonitorService : BackgroundService
     private readonly ILogger<FolderMonitorService> _logger;
     private readonly List<FileSystemWatcher> _watchers = [];
     private readonly object _gate = new();
+    private readonly SemaphoreSlim _scanLock = new(1, 1);
     private string[] _roots = [];
     private CancellationTokenSource? _debounceCts;
 
@@ -102,7 +103,13 @@ public sealed class FolderMonitorService : BackgroundService
         }
 
         _watchers.Clear();
+        _scanLock.Dispose();
         return base.StopAsync(cancellationToken);
+    }
+
+    public Task RequestRescanAsync(CancellationToken cancellationToken)
+    {
+        return ScanAsync(cancellationToken);
     }
 
     private void OnFilesystemChanged(object sender, FileSystemEventArgs args)
@@ -146,6 +153,7 @@ public sealed class FolderMonitorService : BackgroundService
 
     private async Task ScanAsync(CancellationToken cancellationToken)
     {
+        await _scanLock.WaitAsync(cancellationToken);
         _state.MarkScanning();
 
         try
@@ -165,6 +173,10 @@ public sealed class FolderMonitorService : BackgroundService
         {
             _logger.LogError(ex, "Depmap scan failed");
             _state.SetError(ex.Message);
+        }
+        finally
+        {
+            _scanLock.Release();
         }
     }
 

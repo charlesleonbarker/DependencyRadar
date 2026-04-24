@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Depmap: Backend (.NET)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "dotnet: build",
+      "program": "${workspaceFolder}/src/Depmap.Service/bin/Debug/net8.0/Depmap.Service.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/Depmap.Service",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5001"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(http://\\S+)"
+      }
+    },
+    {
+      "name": "Depmap: Web (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "preLaunchTask": "web: dev",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src/Depmap.Web/src",
+      "sourceMaps": true
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Depmap: Full Stack",
+      "configurations": ["Depmap: Backend (.NET)", "Depmap: Web (Chrome)"],
+      "stopAll": true
+    }
+  ]
+}

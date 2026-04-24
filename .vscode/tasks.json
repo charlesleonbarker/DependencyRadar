@@ -1,0 +1,78 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dotnet: build",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "${workspaceFolder}/Depmap.sln", "-v", "minimal"],
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "dotnet: test",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["test", "${workspaceFolder}/Depmap.sln", "-v", "minimal"],
+      "group": "test",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "web: install",
+      "type": "process",
+      "command": "npm",
+      "args": ["install", "--prefix", "${workspaceFolder}/src/Depmap.Web"],
+      "problemMatcher": []
+    },
+    {
+      "label": "web: typecheck",
+      "type": "process",
+      "command": "npm",
+      "args": ["run", "typecheck", "--prefix", "${workspaceFolder}/src/Depmap.Web"],
+      "group": "build",
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "web: build",
+      "type": "process",
+      "command": "npm",
+      "args": ["run", "build", "--prefix", "${workspaceFolder}/src/Depmap.Web"],
+      "group": "build",
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "web: dev",
+      "type": "process",
+      "command": "npm",
+      "args": [
+        "run",
+        "dev",
+        "--prefix",
+        "${workspaceFolder}/src/Depmap.Web",
+        "--",
+        "--host",
+        "localhost",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "dependsOn": "web: install",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "vite",
+          "endsPattern": "Local:\\s+http://localhost:5173/"
+        }
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "clear": true
+      }
+    }
+  ]
+}

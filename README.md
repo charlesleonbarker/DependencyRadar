@@ -1,51 +1,27 @@
 # Depmap
 
-A tool for visualizing and impact-analyzing the dependency web across a folder of .NET repositories.
+Depmap is a split backend/frontend tool for visualizing and impact-analyzing dependency relationships across a folder of .NET repositories.
 
-Points it at a folder of git repos, walks every `.sln` / `.csproj`, classifies projects (test / web / blazor / service / library / nuget-producing), detects internal NuGets (matched against packable projects in the scan), and produces a single self-contained `depmap.html` artifact with an interactive graph and a "tests to run / deployables to smoke-test" impact panel.
+- `Depmap.Service` watches configured roots, rescans on change, and exposes the current graph over HTTP.
+- `Depmap.Web` is a separate React app that consumes that API and renders the map.
+- `Depmap.Core` contains the shared parsing, discovery, graph-building, and JSON serialization logic.
 
-## Why it exists
-
-Microservice-sized .NET estates end up with dozens of repos sharing internal NuGet packages. When someone updates a common package, answering "what might break?" and "what should we test?" is tedious and error-prone. This tool closes the loop: pick the project or package that changed, see the reverse-BFS blast radius, and get a list of the test projects transitively affected.
-
-See [DESIGN.md](DESIGN.md) for the full architecture and data model.
+See [DESIGN.md](DESIGN.md) for the architecture and data model.
 
 ## Quick start
 
 ```bash
-# Build
 dotnet build
-
-# Scan the included fixtures and open the resulting HTML in a browser
-dotnet run --project src/Depmap -- scan test/fixtures --output test/fixtures/depmap.html
-
-# Run tests
 dotnet test
 ```
 
-Point `scan` at any folder of .NET repos. The output is a single HTML file — open it directly, upload it as a CI artifact, or commit it.
-
 ## Projects
 
-- `src/Depmap.Core` — reusable parsing, discovery, graph-building, and JSON serialization.
-- `src/Depmap` — CLI that scans on demand and emits the self-contained HTML artifact.
-- `src/Depmap.Service` — long-running backend that watches configured roots, rescans on change, and serves the current graph over HTTP.
+- `src/Depmap.Core` — shared parsing, discovery, graph building, JSON serialization.
+- `src/Depmap.Service` — backend API and folder monitoring.
+- `src/Depmap.Web` — standalone React frontend.
 
-## CLI
-
-```text
-depmap scan <rootFolder> [options]
- 
-Options:
-  --output <path>       Path for the self-contained HTML artifact (default: depmap.html)
-  --json <path>         Also emit the raw graph as JSON to this path
-  --include-transitive  Include transitive NuGet edges from project.assets.json when present (default: true)
-  --no-transitive       Disable transitive NuGet edges
-  --ignore <glob>       Glob(s) of paths to skip (may be repeated)
-  --quiet               Suppress progress output
-```
-
-## Service
+## Backend
 
 Configure watched roots in [src/Depmap.Service/appsettings.json](/Users/charles/Documents/Claude/Projects/dependancyMap/src/Depmap.Service/appsettings.json) under `Depmap:Roots`, then run:
 
@@ -53,27 +29,73 @@ Configure watched roots in [src/Depmap.Service/appsettings.json](/Users/charles/
 dotnet run --project src/Depmap.Service
 ```
 
-Endpoints:
+If `localhost:5000` is occupied on your machine, use another port:
 
-- `GET /api/status` — monitor state, last scan time, and graph counts
-- `GET /api/graph` — current graph JSON for a frontend to consume
+```bash
+ASPNETCORE_URLS=http://localhost:5001 dotnet run --project src/Depmap.Service
+```
 
-Rider shared run configs are checked in under [.run](/Users/charles/Documents/Claude/Projects/dependancyMap/.run):
+API surface:
 
-- `Depmap Full Stack (Fixtures)` — runs `Depmap.Service` in `Development` against `test/fixtures`
-- `Depmap Scan Fixtures` — generates the fixture HTML/JSON snapshot with the CLI
+- `GET /api/status`
+- `GET /api/graph`
+- `POST /api/rescan`
+- `GET /api/updates`
+
+The backend is API-only. It does not host the frontend.
+
+## Frontend
+
+Run the frontend separately:
+
+```bash
+npm install --prefix src/Depmap.Web
+npm run dev --prefix src/Depmap.Web
+```
+
+By default Vite runs on `http://localhost:5173` and proxies `/api/*` to `http://localhost:5001`.
+
+If you want the frontend to target a different backend directly, set `VITE_API_BASE_URL`:
+
+```bash
+VITE_API_BASE_URL=http://localhost:5001 npm run dev --prefix src/Depmap.Web
+```
+
+## Local development
+
+Run backend and frontend as separate processes:
+
+```bash
+ASPNETCORE_URLS=http://localhost:5001 dotnet run --project src/Depmap.Service
+npm install --prefix src/Depmap.Web
+npm run dev --prefix src/Depmap.Web
+```
+
+## VS Code
+
+Shared VS Code launch and task config is in [.vscode](/Users/charles/Documents/Claude/Projects/dependancyMap/.vscode):
+
+- `Depmap: Backend (.NET)` — builds and debugs `Depmap.Service` on `http://localhost:5001`
+- `Depmap: Web (Chrome)` — starts Vite on `http://localhost:5173` and opens the React app
+- `Depmap: Full Stack` — starts both launch targets together
+
+## Rider
+
+Shared run configs are in [.run](/Users/charles/Documents/Claude/Projects/dependancyMap/.run):
+
+- `Depmap Backend (Fixtures)` — runs the backend in `Development` against `test/fixtures`
 
 ## Docker
 
-The live app can also run in a container. The image publishes `Depmap.Service` and serves the frontend and backend together on port `8080`.
+The checked-in [Dockerfile](/Users/charles/Documents/Claude/Projects/dependancyMap/Dockerfile) builds the backend only.
 
-Build the image:
+Build:
 
 ```bash
 docker build -t depmap .
 ```
 
-Run it with your repo estate mounted at `/repos`:
+Run:
 
 ```bash
 docker run --rm -p 8080:8080 -v /path/to/repos:/repos depmap
@@ -88,25 +110,20 @@ docker run --rm -p 8080:8080 \
   depmap
 ```
 
-Then open [http://localhost:8080](http://localhost:8080).
+The frontend is not served by this container. Point your separately running frontend at `http://localhost:8080`.
 
 ## Repository layout
 
-```
-src/Depmap/             scanner CLI + embedded viewer assets
+```text
+src/Depmap.Core/        shared scanner logic
+src/Depmap.Service/     backend API
+src/Depmap.Web/         React frontend
 test/Depmap.Tests/      xunit unit tests
-test/fixtures/          synthetic multi-repo fixture — scan this to sanity-check the tool
+test/fixtures/          synthetic multi-repo fixture estate
 ```
 
 ## Notes
 
-- The viewer uses [Cytoscape.js](https://js.cytoscape.org/) + [fcose](https://github.com/iVis-at-Bilkent/cytoscape.js-fcose). By default the built HTML loads these from unpkg. To produce a truly offline-capable artifact, drop the minified builds into `src/Depmap/Viewer/` and they'll be inlined automatically (the `.csproj` picks them up conditionally):
-  - `cytoscape.min.js`
-  - `cytoscape-fcose.min.js`
-  - (optional) `cytoscape-dagre.min.js`
-- Multi-targeted projects are represented as a single node; their dependency edges are the union across target frameworks. TFM-level ambiguity is surfaced as `unknown` rather than guessed.
-- Packages whose producer is not found in the scanned folder are classified `unknown`. The tool never calls nuget.org or any feed.
-
-## License
-
-Internal tool. No licensing decisions have been made yet.
+- Multi-targeted projects are represented as a single node; dependency edges are the union across TFMs.
+- Packages whose producer cannot be resolved locally remain `unknown`.
+- The tool never calls nuget.org or any external metadata service.

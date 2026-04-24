@@ -3,7 +3,6 @@ WORKDIR /src
 
 COPY Depmap.sln ./
 COPY src/Depmap.Core/Depmap.Core.csproj src/Depmap.Core/
-COPY src/Depmap/Depmap.csproj src/Depmap/
 COPY src/Depmap.Service/Depmap.Service.csproj src/Depmap.Service/
 COPY test/Depmap.Tests/Depmap.Tests.csproj test/Depmap.Tests/
 RUN dotnet restore src/Depmap.Service/Depmap.Service.csproj
