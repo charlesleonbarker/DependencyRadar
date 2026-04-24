@@ -81,7 +81,7 @@ export function SearchFilterDock({
               <label className="filter-item" title="Show unresolved package leaves.">
                 <input type="checkbox" checked={showExternal} onChange={(event) => setShowExternal(event.target.checked)} />
                 <span className="shape-chip package-shape pkg-unknown" />
-                <span className="filter-text">Show External / Unknown Packages</span>
+                <span className="filter-text">External Packages</span>
               </label>
             </div>
           </div>

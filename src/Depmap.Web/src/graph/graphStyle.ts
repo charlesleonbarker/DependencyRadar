@@ -65,6 +65,8 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
   { selector: ".e-packageRef", style: { width: 2.5, "line-color": "#dc2626", "target-arrow-color": "#dc2626", "target-arrow-shape": "vee" } },
   { selector: ".e-packageRefTransitive", style: { width: 2.2, "line-color": "#7c3aed", "target-arrow-color": "#7c3aed", "target-arrow-shape": "vee", "line-style": "dashed" } },
   { selector: ".e-producedBy", style: { width: 2.3, "line-color": "#16a34a", "target-arrow-color": "#16a34a", "target-arrow-shape": "triangle", "line-style": "dotted" } },
+  { selector: ".dim", style: { opacity: 0.12 } },
+  { selector: ".hilite", style: { opacity: 1, "z-index": 20 } },
   {
     selector: ".ancestor",
     style: {

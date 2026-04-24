@@ -3,6 +3,7 @@ import type { LayoutId } from "../graph/cytoscapeModel";
 const LAYOUT_OPTIONS: Array<{ id: LayoutId; label: string; note: string }> = [
   { id: "dagre", label: "Flow", note: "Best overview for dependency direction." },
   { id: "fcose", label: "Force", note: "Good for cluster discovery." },
+  { id: "concentric", label: "Focus", note: "Groups highly connected projects toward the centre." },
 ];
 
 interface BottomControlsProps {

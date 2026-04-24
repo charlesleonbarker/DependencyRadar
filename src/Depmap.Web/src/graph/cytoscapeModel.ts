@@ -3,7 +3,7 @@ import type { DepmapGraph, ProjectKind } from "../api/types";
 import type { GraphModel } from "../domain/graphModel";
 import { effectiveProjectKinds } from "../domain/projectKinds";
 
-export type LayoutId = "dagre" | "fcose";
+export type LayoutId = "dagre" | "fcose" | "concentric";
 
 export interface FilterState {
   kindFilters: Record<ProjectKind, boolean>;
@@ -66,6 +66,8 @@ export function runLayout(cy: cytoscape.Core | null, layout: LayoutId): void {
   const config: cytoscape.LayoutOptions =
     layout === "fcose"
       ? ({ name: "fcose", animate: false, nodeRepulsion: 6200, idealEdgeLength: 120, packComponents: true, gravity: 0.16, fit: true, padding: 52 } as cytoscape.LayoutOptions)
+      : layout === "concentric"
+        ? { name: "concentric", animate: false, fit: true, padding: 52, concentric: (node: cytoscape.NodeSingular) => node.degree(), levelWidth: () => 2 }
       : ({ name: "dagre", rankDir: "LR", ranker: "network-simplex", nodeSep: 34, rankSep: 110, edgeSep: 28, nodeDimensionsIncludeLabels: true, fit: true, padding: 52 } as cytoscape.LayoutOptions);
 
   cy.layout(config).run();
@@ -109,12 +111,23 @@ export function applyVisibility(cy: cytoscape.Core | null, filterState: FilterSt
 export function applySelection(cy: cytoscape.Core | null, model: GraphModel | null, selectionId: string | null): void {
   if (!cy) return;
 
-  cy.elements().removeClass("ancestor descendant");
+  cy.elements().removeClass("dim hilite ancestor descendant");
   cy.elements().unselect();
   if (!selectionId || !model?.nodesById[selectionId]) return;
 
   const ancestors = model.reverseReach(selectionId);
   const descendants = model.forwardReach(selectionId);
+  const linked = new Set([selectionId, ...ancestors, ...descendants]);
+
+  cy.nodes().forEach((node) => {
+    if (node.style("display") === "none" || node.hasClass("n-repo")) return;
+    node.addClass(linked.has(node.id()) ? "hilite" : "dim");
+  });
+
+  cy.edges().forEach((edge) => {
+    if (edge.style("display") === "none") return;
+    edge.addClass(linked.has(edge.source().id()) && linked.has(edge.target().id()) ? "hilite" : "dim");
+  });
 
   ancestors.forEach((id) => cy.getElementById(id).addClass("ancestor"));
   descendants.forEach((id) => cy.getElementById(id).addClass("descendant"));

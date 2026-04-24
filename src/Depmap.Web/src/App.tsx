@@ -19,7 +19,7 @@ export function App() {
   const [error, setError] = useState("");
   const [selectionId, setSelectionId] = useState<string | null>(null);
   const [layout, setLayout] = useState<LayoutId>("dagre");
-  const [showExternal, setShowExternal] = useState(true);
+  const [showExternal, setShowExternal] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
   const [rescanning, setRescanning] = useState(false);

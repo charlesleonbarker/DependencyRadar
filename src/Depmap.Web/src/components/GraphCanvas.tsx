@@ -74,8 +74,8 @@ export function GraphCanvas({
     if (!cy) return;
     applyVisibility(cy, filterState, searchText);
     runLayout(cy, layout);
-    if (selectionId) applySelection(cy, model, selectionId);
-  }, [filterState, layout, model, selectionId, searchText]);
+    applySelection(cy, model, selectionId);
+  }, [filterState, layout, graph, groupByRepo, searchText]);
 
   useEffect(() => {
     const cy = cyRef.current;
