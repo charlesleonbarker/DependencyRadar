@@ -1,12 +1,18 @@
-using Depmap.Scanning;
-using Depmap.Service.Configuration;
-using Depmap.Service.Services;
+using DependencyRadar.Scanning;
+using DependencyRadar.Service.Configuration;
+using DependencyRadar.Service.Services;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<MonitorOptions>(builder.Configuration.GetSection(MonitorOptions.SectionName));
-builder.Services.AddSingleton<DepmapScanner>();
+var monitorOptionsSection = builder.Configuration.GetSection(MonitorOptions.SectionName);
+if (!monitorOptionsSection.GetChildren().Any())
+{
+    monitorOptionsSection = builder.Configuration.GetSection("Depmap");
+}
+
+builder.Services.Configure<MonitorOptions>(monitorOptionsSection);
+builder.Services.AddSingleton<DependencyRadarScanner>();
 builder.Services.AddSingleton<MonitorState>();
 builder.Services.AddSingleton<FolderMonitorService>();
 builder.Services.AddSingleton<IMonitorControl>(static services => services.GetRequiredService<FolderMonitorService>());
@@ -32,6 +38,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 app.UseCors();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.MapGet("/api/status", (MonitorState state) => Results.Ok(state.GetStatus()));
 
@@ -65,5 +73,7 @@ app.MapGet("/api/updates", async (HttpContext context, MonitorState state) =>
         await context.Response.Body.FlushAsync(context.RequestAborted);
     }
 });
+
+app.MapFallbackToFile("index.html");
 
 app.Run();

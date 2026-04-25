@@ -4,11 +4,20 @@ import cytoscapeDagre from "cytoscape-dagre";
 import cytoscapeFcose from "cytoscape-fcose";
 import type { DepmapGraph, MonitorStatus } from "../api/types";
 import type { GraphModel } from "../domain/graphModel";
-import { applySelection, applyVisibility, buildElements, type FilterState, type LayoutId, runLayout } from "../graph/cytoscapeModel";
+import { applySelection, applyVisibility, buildElements, fitSelection, type FilterState, type LayoutId, runLayout } from "../graph/cytoscapeModel";
 import { GRAPH_STYLE } from "../graph/graphStyle";
 
 cytoscape.use(cytoscapeFcose);
 cytoscape.use(cytoscapeDagre);
+
+const SCREEN_FONT = 13;
+
+function scaleFonts(cy: cytoscape.Core) {
+  const z = cy.zoom();
+  cy.batch(() => {
+    cy.nodes(":not(.n-repo)").style("font-size", SCREEN_FONT / z);
+  });
+}
 
 interface GraphCanvasProps {
   graph: DepmapGraph | null;
@@ -20,6 +29,7 @@ interface GraphCanvasProps {
   filterState: FilterState;
   searchText: string;
   status: MonitorStatus | null;
+  leftInset?: number;
 }
 
 export function GraphCanvas({
@@ -30,8 +40,9 @@ export function GraphCanvas({
   layout,
   groupByRepo,
   filterState,
-  searchText,
+  searchText: _searchText,
   status,
+  leftInset = 0,
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
@@ -59,9 +70,12 @@ export function GraphCanvas({
     cy.edges().unselectify();
     cy.nodes(".n-repo").unselectify();
     cyRef.current = cy;
-    applyVisibility(cy, filterState, searchText);
+    cy.on("zoom", () => scaleFonts(cy));
+    applyVisibility(cy, filterState);
     runLayout(cy, layout);
+    scaleFonts(cy);
     applySelection(cy, model, selectionId);
+    fitSelection(cy, model, selectionId, leftInset);
 
     return () => {
       cy.destroy();
@@ -72,16 +86,19 @@ export function GraphCanvas({
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
-    applyVisibility(cy, filterState, searchText);
+    applyVisibility(cy, filterState);
     runLayout(cy, layout);
+    scaleFonts(cy);
     applySelection(cy, model, selectionId);
-  }, [filterState, layout, graph, groupByRepo, searchText]);
+    fitSelection(cy, model, selectionId, leftInset);
+  }, [filterState, layout, graph, groupByRepo]);
 
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
     applySelection(cy, model, selectionId);
-  }, [model, selectionId]);
+    fitSelection(cy, model, selectionId, leftInset);
+  }, [model, selectionId, leftInset]);
 
   if (!graph) {
     return (

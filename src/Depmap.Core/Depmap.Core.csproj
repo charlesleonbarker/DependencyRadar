@@ -4,7 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Depmap</RootNamespace>
+    <AssemblyName>DependencyRadar.Core</AssemblyName>
+    <RootNamespace>DependencyRadar</RootNamespace>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>

@@ -1,6 +1,6 @@
-using Depmap.Scanning;
+using DependencyRadar.Scanning;
 
-namespace Depmap.Service.Contracts;
+namespace DependencyRadar.Service.Contracts;
 
 public sealed record MonitorStatus(
     long Version,

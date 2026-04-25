@@ -1,4 +1,4 @@
-namespace Depmap.Tests.Support;
+namespace DependencyRadar.Tests.Support;
 
 /// <summary>
 /// Creates a throw-away directory tree on disk that mirrors a realistic multi-repo .NET layout.
@@ -10,7 +10,7 @@ internal sealed class TestFixtureWorkspace : IDisposable
 
     public TestFixtureWorkspace()
     {
-        Root = Path.Combine(Path.GetTempPath(), "depmap-test-" + Guid.NewGuid().ToString("n"));
+        Root = Path.Combine(Path.GetTempPath(), "dependency-radar-test-" + Guid.NewGuid().ToString("n"));
         Directory.CreateDirectory(Root);
     }
 

@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Depmap.Graph;
-using GraphModel = Depmap.Graph.Graph;
+using DependencyRadar.Graph;
+using GraphModel = DependencyRadar.Graph.Graph;
 
-namespace Depmap.Rendering;
+namespace DependencyRadar.Rendering;
 
 /// <summary>
 /// Serializes a Graph to the JSON shape consumed by the viewer.

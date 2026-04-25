@@ -20,6 +20,15 @@ export const KIND_NOTES: Record<ProjectKind, string> = {
   "nuget-producing": "Projects that publish internal packages.",
 };
 
+export const KIND_SHORT: Record<ProjectKind, string> = {
+  library: "Library",
+  test: "Test",
+  web: "Web",
+  blazor: "Blazor",
+  service: "Service",
+  "nuget-producing": "NuGet",
+};
+
 export const KIND_CLASS: Record<ProjectKind, string> = {
   library: "kind-library",
   test: "kind-test",

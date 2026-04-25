@@ -1,4 +1,4 @@
-namespace Depmap.Parsing;
+namespace DependencyRadar.Parsing;
 
 /// <summary>
 /// Walks a root folder, finds .sln and .csproj files, and parses them.

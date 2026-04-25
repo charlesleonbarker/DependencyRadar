@@ -2,11 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Depmap: Backend (.NET)",
+      "name": "Dependency Radar: Backend (.NET)",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "dotnet: build",
-      "program": "${workspaceFolder}/src/Depmap.Service/bin/Debug/net8.0/Depmap.Service.dll",
+      "program": "${workspaceFolder}/src/Depmap.Service/bin/Debug/net8.0/DependencyRadar.Service.dll",
       "args": [],
       "cwd": "${workspaceFolder}/src/Depmap.Service",
       "stopAtEntry": false,
@@ -20,7 +20,7 @@
       }
     },
     {
-      "name": "Depmap: Web (Chrome)",
+      "name": "Dependency Radar: Web (Chrome)",
       "type": "chrome",
       "request": "launch",
       "preLaunchTask": "web: dev",
@@ -31,8 +31,8 @@
   ],
   "compounds": [
     {
-      "name": "Depmap: Full Stack",
-      "configurations": ["Depmap: Backend (.NET)", "Depmap: Web (Chrome)"],
+      "name": "Dependency Radar: Full Stack",
+      "configurations": ["Dependency Radar: Backend (.NET)", "Dependency Radar: Web (Chrome)"],
       "stopAll": true
     }
   ]

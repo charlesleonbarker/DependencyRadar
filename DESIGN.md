@@ -1,14 +1,14 @@
-# Depmap — Current Design
+# Dependency Radar - Current Design
 
-Depmap is split into three components:
+Dependency Radar is split into three components:
 
-1. `Depmap.Core`
+1. `DependencyRadar.Core`
    Local-only discovery, parsing, classification, graph building, and graph JSON serialization.
 
-2. `Depmap.Service`
-   ASP.NET Core backend that watches configured roots, debounces file changes, rescans via `Depmap.Core`, keeps the latest graph in memory, and exposes it over HTTP.
+2. `DependencyRadar.Service`
+   ASP.NET Core backend that watches configured roots, debounces file changes, rescans via `DependencyRadar.Core`, keeps the latest graph in memory, and exposes it over HTTP.
 
-3. `Depmap.Web`
+3. `DependencyRadar.Web`
    React + Cytoscape frontend that runs separately from the backend and consumes the HTTP API.
 
 ## Architecture
@@ -20,7 +20,7 @@ Depmap is split into three components:
           │
           ▼
 ┌────────────────────┐
-│   Depmap.Service   │
+│DependencyRadar.Svc │
 │ watch + debounce   │
 │ scan + expose API  │
 └───────┬─────┬──────┘
@@ -28,12 +28,12 @@ Depmap is split into three components:
         │     └───────────────┐
         ▼                     ▼
 ┌───────────────┐      ┌───────────────┐
-│ current graph │      │  Depmap.Web   │
+│ current graph │      │DependencyRadar│
 │ in memory     │      │ React + Vite  │
 └───────────────┘      └───────────────┘
 ```
 
-The stable boundary is the graph JSON contract produced by `Depmap.Core` and exposed by `Depmap.Service`.
+The stable boundary is the graph JSON contract produced by `DependencyRadar.Core` and exposed by `DependencyRadar.Service`.
 
 ## Project layout
 
@@ -47,7 +47,9 @@ The stable boundary is the graph JSON contract produced by `Depmap.Core` and exp
   Frontend source.
 
 - `test/Depmap.Tests/`
-  Unit tests against `Depmap.Core`.
+  Unit tests against `DependencyRadar.Core`.
+
+The source folders retain their original `Depmap.*` names for now. Namespaces, assemblies, configuration, deployment labels, and user-facing copy use `DependencyRadar` / Dependency Radar.
 
 ## Backend responsibilities
 
@@ -55,7 +57,7 @@ The stable boundary is the graph JSON contract produced by `Depmap.Core` and exp
 - Create `FileSystemWatcher` instances for those roots.
 - Treat watcher events as invalidation signals, not incremental graph edits.
 - Debounce bursts of changes.
-- Rescan deterministically through `Depmap.Core`.
+- Rescan deterministically through `DependencyRadar.Core`.
 - Keep the latest graph JSON and summary in memory.
 - Expose scan state and graph data over HTTP.
 - Emit SSE updates when the graph version changes.
@@ -76,7 +78,7 @@ Current API:
 - Maintain search, filters, layout, focus, and selection state
 - Compute blast radius, affected tests, and deployables client-side
 
-`Depmap.Web` should stay thin on domain logic. Graph semantics remain owned by the shared model and API contract.
+`DependencyRadar.Web` should stay thin on domain logic. Graph semantics remain owned by the shared model and API contract.
 
 ## Data model
 

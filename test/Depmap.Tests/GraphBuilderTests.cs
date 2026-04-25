@@ -1,9 +1,9 @@
-using Depmap.Graph;
-using Depmap.Parsing;
-using Depmap.Tests.Support;
+using DependencyRadar.Graph;
+using DependencyRadar.Parsing;
+using DependencyRadar.Tests.Support;
 using Xunit;
 
-namespace Depmap.Tests;
+namespace DependencyRadar.Tests;
 
 public class GraphBuilderTests
 {

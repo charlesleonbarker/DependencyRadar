@@ -1,6 +1,6 @@
 # Fixture estate
 
-This folder is the synthetic multi-repo test estate for Depmap.
+This folder is the synthetic multi-repo test estate for Dependency Radar.
 
 Run the backend against it:
 

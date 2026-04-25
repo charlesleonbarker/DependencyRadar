@@ -63,17 +63,18 @@ export function buildElements(graph: DepmapGraph, groupByRepo: boolean): cytosca
 export function runLayout(cy: cytoscape.Core | null, layout: LayoutId): void {
   if (!cy) return;
 
+  const eles = cy.elements().not(".is-filtered");
   const config: cytoscape.LayoutOptions =
     layout === "fcose"
-      ? ({ name: "fcose", animate: false, nodeRepulsion: 6200, idealEdgeLength: 120, packComponents: true, gravity: 0.16, fit: true, padding: 52 } as cytoscape.LayoutOptions)
+      ? ({ name: "fcose", eles, animate: false, nodeRepulsion: 6200, idealEdgeLength: 120, packComponents: true, gravity: 0.16, fit: true, padding: 52 } as cytoscape.LayoutOptions)
       : layout === "concentric"
-        ? { name: "concentric", animate: false, fit: true, padding: 52, concentric: (node: cytoscape.NodeSingular) => node.degree(), levelWidth: () => 2 }
-      : ({ name: "dagre", rankDir: "LR", ranker: "network-simplex", nodeSep: 34, rankSep: 110, edgeSep: 28, nodeDimensionsIncludeLabels: true, fit: true, padding: 52 } as cytoscape.LayoutOptions);
+        ? ({ name: "concentric", eles, animate: false, fit: true, padding: 52, concentric: (node: cytoscape.NodeSingular) => node.indegree(false), levelWidth: () => 1 } as cytoscape.LayoutOptions)
+      : ({ name: "dagre", eles, rankDir: "LR", ranker: "network-simplex", nodeSep: 34, rankSep: 110, edgeSep: 28, nodeDimensionsIncludeLabels: true, fit: true, padding: 52 } as cytoscape.LayoutOptions);
 
   cy.layout(config).run();
 }
 
-export function applyVisibility(cy: cytoscape.Core | null, filterState: FilterState, _searchText: string): void {
+export function applyVisibility(cy: cytoscape.Core | null, filterState: FilterState): void {
   if (!cy) return;
 
   const { kindFilters, showExternal } = filterState;
@@ -93,17 +94,17 @@ export function applyVisibility(cy: cytoscape.Core | null, filterState: FilterSt
         if ((classification === "external" || classification === "unknown") && !showExternal) visible = false;
       }
 
-      node.style("display", visible ? "element" : "none");
+      node.toggleClass("is-filtered", !visible);
     });
 
     cy.edges().forEach((edge) => {
-      const visible = edge.source().style("display") !== "none" && edge.target().style("display") !== "none";
-      edge.style("display", visible ? "element" : "none");
+      const visible = !edge.source().hasClass("is-filtered") && !edge.target().hasClass("is-filtered");
+      edge.toggleClass("is-filtered", !visible);
     });
 
     cy.nodes(".n-repo").forEach((repo) => {
-      const hasVisibleChildren = repo.children().filter((child) => child.style("display") !== "none").nonempty();
-      repo.style("display", hasVisibleChildren ? "element" : "none");
+      const hasVisibleChildren = repo.children().not(".is-filtered").nonempty();
+      repo.toggleClass("is-filtered", !hasVisibleChildren);
     });
   });
 }
@@ -117,19 +118,86 @@ export function applySelection(cy: cytoscape.Core | null, model: GraphModel | nu
 
   const ancestors = model.reverseReach(selectionId);
   const descendants = model.forwardReach(selectionId);
-  const linked = new Set([selectionId, ...ancestors, ...descendants]);
+  const graphSelectionId = model.graphIdForSelection(selectionId);
+  const linked = new Set([selectionId, graphSelectionId, ...ancestors, ...descendants]);
 
   cy.nodes().forEach((node) => {
-    if (node.style("display") === "none" || node.hasClass("n-repo")) return;
+    if (node.hasClass("is-filtered") || node.hasClass("n-repo")) return;
     node.addClass(linked.has(node.id()) ? "hilite" : "dim");
   });
 
+  cy.nodes(".n-repo").forEach((repo) => {
+    if (repo.hasClass("is-filtered")) return;
+    const visibleChildren = repo.children().not(".is-filtered");
+    const allDimmed = visibleChildren.nonempty() && visibleChildren.not(".dim").empty();
+    if (allDimmed) repo.addClass("dim");
+  });
+
   cy.edges().forEach((edge) => {
-    if (edge.style("display") === "none") return;
+    if (edge.hasClass("is-filtered")) return;
     edge.addClass(linked.has(edge.source().id()) && linked.has(edge.target().id()) ? "hilite" : "dim");
   });
 
   ancestors.forEach((id) => cy.getElementById(id).addClass("ancestor"));
   descendants.forEach((id) => cy.getElementById(id).addClass("descendant"));
-  cy.getElementById(selectionId).select();
+  cy.getElementById(graphSelectionId).select();
+}
+
+export function fitSelection(cy: cytoscape.Core | null, model: GraphModel | null, selectionId: string | null, leftInset = 0): void {
+  if (!cy || !selectionId || !model?.nodesById[selectionId]) return;
+
+  const graphSelectionId = model.graphIdForSelection(selectionId);
+  const ids = new Set([graphSelectionId, ...model.neighborhood(selectionId).map((id) => model.graphIdForSelection(id))]);
+  const visibleNodes = cy
+    .nodes()
+    .filter((node) => ids.has(node.id()) && !node.hasClass("is-filtered") && !node.hasClass("n-repo"));
+
+  if (visibleNodes.nonempty()) {
+    fitElementsInAvailableViewport(cy, visibleNodes, leftInset);
+    return;
+  }
+
+  const selected = cy.getElementById(graphSelectionId);
+  if (selected.nonempty()) {
+    fitElementsInAvailableViewport(cy, selected, leftInset);
+  }
+}
+
+function fitElementsInAvailableViewport(
+  cy: cytoscape.Core,
+  elements: cytoscape.CollectionReturnValue,
+  leftInset: number,
+): void {
+  const padding = 96;
+  const viewportWidth = cy.width();
+  const viewportHeight = cy.height();
+  const usableLeft = Math.min(leftInset, viewportWidth * 0.7);
+  const usableWidth = Math.max(240, viewportWidth - usableLeft);
+  const usableHeight = Math.max(240, viewportHeight);
+  const bounds = elements.boundingBox({ includeLabels: true, includeOverlays: false });
+
+  const boundsWidth = Math.max(1, bounds.w);
+  const boundsHeight = Math.max(1, bounds.h);
+  const zoom = clamp(
+    Math.min((usableWidth - padding * 2) / boundsWidth, (usableHeight - padding * 2) / boundsHeight),
+    cy.minZoom(),
+    cy.maxZoom(),
+  );
+  const boundsCenterX = bounds.x1 + boundsWidth / 2;
+  const boundsCenterY = bounds.y1 + boundsHeight / 2;
+  const viewportCenterX = usableLeft + usableWidth / 2;
+  const viewportCenterY = viewportHeight / 2;
+
+  cy.animate({
+    zoom,
+    pan: {
+      x: viewportCenterX - boundsCenterX * zoom,
+      y: viewportCenterY - boundsCenterY * zoom,
+    },
+    duration: 220,
+  });
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

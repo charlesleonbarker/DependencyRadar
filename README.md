@@ -1,10 +1,14 @@
-# Depmap
+# Dependency Radar
 
-Depmap is a split backend/frontend tool for visualizing and impact-analyzing dependency relationships across a folder of .NET repositories.
+Dependency Radar is a local-first .NET dependency impact tool made by Charlie Barker.
 
-- `Depmap.Service` watches configured roots, rescans on change, and exposes the current graph over HTTP.
-- `Depmap.Web` is a separate React app that consumes that API and renders the map.
-- `Depmap.Core` contains the shared parsing, discovery, graph-building, and JSON serialization logic.
+It visualizes dependency relationships across a folder of .NET repositories and helps developers and testers understand what needs retesting when a project or package changes.
+
+Source: [github.com/charlesleonbarker/Depmap](https://github.com/charlesleonbarker/Depmap)
+
+- `DependencyRadar.Service` watches configured roots, rescans on change, and exposes the current graph over HTTP.
+- `DependencyRadar.Web` is a separate React app that consumes that API and renders the map.
+- `DependencyRadar.Core` contains the shared parsing, discovery, graph-building, and JSON serialization logic.
 
 See [DESIGN.md](DESIGN.md) for the architecture and data model.
 
@@ -21,9 +25,11 @@ dotnet test
 - `src/Depmap.Service` — backend API and folder monitoring.
 - `src/Depmap.Web` — standalone React frontend.
 
+The source folders keep their original `Depmap.*` paths for now, while the product, namespaces, assembly names, Docker image, and deployment surface use `Dependency Radar`.
+
 ## Backend
 
-Configure watched roots in [src/Depmap.Service/appsettings.json](/Users/charles/Documents/Claude/Projects/dependancyMap/src/Depmap.Service/appsettings.json) under `Depmap:Roots`, then run:
+Configure watched roots in [src/Depmap.Service/appsettings.json](/Users/charles/Documents/Claude/Projects/dependancyMap/src/Depmap.Service/appsettings.json) under `DependencyRadar:Roots`, then run:
 
 ```bash
 dotnet run --project src/Depmap.Service
@@ -75,15 +81,15 @@ npm run dev --prefix src/Depmap.Web
 
 Shared VS Code launch and task config is in [.vscode](/Users/charles/Documents/Claude/Projects/dependancyMap/.vscode):
 
-- `Depmap: Backend (.NET)` — builds and debugs `Depmap.Service` on `http://localhost:5001`
-- `Depmap: Web (Chrome)` — starts Vite on `http://localhost:5173` and opens the React app
-- `Depmap: Full Stack` — starts both launch targets together
+- `Dependency Radar: Backend (.NET)` — builds and debugs `DependencyRadar.Service` on `http://localhost:5001`
+- `Dependency Radar: Web (Chrome)` — starts Vite on `http://localhost:5173` and opens the React app
+- `Dependency Radar: Full Stack` — starts both launch targets together
 
 ## Rider
 
 Shared run configs are in [.run](/Users/charles/Documents/Claude/Projects/dependancyMap/.run):
 
-- `Depmap Backend (Fixtures)` — runs the backend in `Development` against `test/fixtures`
+- `Dependency Radar Backend (Fixtures)` — runs the backend in `Development` against `test/fixtures`
 
 ## Docker
 
@@ -92,22 +98,22 @@ The checked-in [Dockerfile](/Users/charles/Documents/Claude/Projects/dependancyM
 Build:
 
 ```bash
-docker build -t depmap .
+docker build -t dependency-radar .
 ```
 
 Run:
 
 ```bash
-docker run --rm -p 8080:8080 -v /path/to/repos:/repos depmap
+docker run --rm -p 8080:8080 -v /path/to/repos:/repos dependency-radar
 ```
 
-If you want a different mount point, override `Depmap__Roots__0`:
+If you want a different mount point, override `DependencyRadar__Roots__0`:
 
 ```bash
 docker run --rm -p 8080:8080 \
-  -e Depmap__Roots__0=/workspace \
+  -e DependencyRadar__Roots__0=/workspace \
   -v /path/to/repos:/workspace \
-  depmap
+  dependency-radar
 ```
 
 The frontend is not served by this container. Point your separately running frontend at `http://localhost:8080`.
@@ -127,3 +133,7 @@ test/fixtures/          synthetic multi-repo fixture estate
 - Multi-targeted projects are represented as a single node; dependency edges are the union across TFMs.
 - Packages whose producer cannot be resolved locally remain `unknown`.
 - The tool never calls nuget.org or any external metadata service.
+
+## License
+
+Dependency Radar is licensed under the MIT License. See [LICENSE](/Users/charles/Documents/Claude/Projects/dependancyMap/LICENSE).

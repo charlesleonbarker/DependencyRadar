@@ -1,8 +1,8 @@
-using Depmap.Graph;
-using Depmap.Parsing;
+using DependencyRadar.Graph;
+using DependencyRadar.Parsing;
 using Xunit;
 
-namespace Depmap.Tests;
+namespace DependencyRadar.Tests;
 
 public class ClassifierTests
 {

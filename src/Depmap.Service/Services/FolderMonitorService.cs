@@ -1,12 +1,12 @@
-using Depmap.Scanning;
-using Depmap.Service.Configuration;
+using DependencyRadar.Scanning;
+using DependencyRadar.Service.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace Depmap.Service.Services;
+namespace DependencyRadar.Service.Services;
 
 public sealed class FolderMonitorService : BackgroundService, IMonitorControl
 {
-    private readonly DepmapScanner _scanner;
+    private readonly DependencyRadarScanner _scanner;
     private readonly MonitorState _state;
     private readonly MonitorOptions _options;
     private readonly ILogger<FolderMonitorService> _logger;
@@ -17,7 +17,7 @@ public sealed class FolderMonitorService : BackgroundService, IMonitorControl
     private CancellationTokenSource? _debounceCts;
 
     public FolderMonitorService(
-        DepmapScanner scanner,
+        DependencyRadarScanner scanner,
         MonitorState state,
         IOptions<MonitorOptions> options,
         ILogger<FolderMonitorService> logger)
@@ -40,7 +40,7 @@ public sealed class FolderMonitorService : BackgroundService, IMonitorControl
 
         if (configuredRoots.Length == 0)
         {
-            _logger.LogWarning("No Depmap roots configured. Set Depmap:Roots in appsettings or environment.");
+            _logger.LogWarning("No Dependency Radar roots configured. Set DependencyRadar:Roots in appsettings or environment.");
             _state.SetError("No roots configured.");
             await Task.Delay(Timeout.Infinite, stoppingToken);
             return;
@@ -52,7 +52,7 @@ public sealed class FolderMonitorService : BackgroundService, IMonitorControl
 
         if (_roots.Length == 0)
         {
-            _logger.LogWarning("No configured Depmap roots exist on disk.");
+            _logger.LogWarning("No configured Dependency Radar roots exist on disk.");
             _state.SetError("No configured roots exist on disk.");
             await Task.Delay(Timeout.Infinite, stoppingToken);
             return;
@@ -171,7 +171,7 @@ public sealed class FolderMonitorService : BackgroundService, IMonitorControl
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Depmap scan failed");
+            _logger.LogError(ex, "Dependency Radar scan failed");
             _state.SetError(ex.Message);
         }
         finally

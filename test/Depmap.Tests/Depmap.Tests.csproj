@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <AssemblyName>DependencyRadar.Tests</AssemblyName>
+    <RootNamespace>DependencyRadar.Tests</RootNamespace>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 

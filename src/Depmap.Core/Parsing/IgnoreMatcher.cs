@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Depmap.Parsing;
+namespace DependencyRadar.Parsing;
 
 /// <summary>
 /// A minimal glob matcher for --ignore patterns. Supports:

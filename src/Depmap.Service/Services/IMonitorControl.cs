@@ -1,4 +1,4 @@
-namespace Depmap.Service.Services;
+namespace DependencyRadar.Service.Services;
 
 public interface IMonitorControl
 {

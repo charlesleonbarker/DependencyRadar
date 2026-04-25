@@ -1,6 +1,6 @@
 using System.Xml.Linq;
 
-namespace Depmap.Parsing;
+namespace DependencyRadar.Parsing;
 
 /// <summary>
 /// Parses a .csproj file as XML to extract:

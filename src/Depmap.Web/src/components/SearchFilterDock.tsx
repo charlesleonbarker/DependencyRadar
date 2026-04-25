@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import type { ProjectKind } from "../api/types";
 import type { SearchSuggestion } from "../domain/graphModel";
-import { DEFAULT_KINDS, KIND_CLASS, KIND_LABELS, KIND_NOTES } from "../domain/projectKinds";
+import { DEFAULT_KINDS, KIND_CLASS, KIND_LABELS, KIND_SHORT } from "../domain/projectKinds";
 
 interface SearchFilterDockProps {
   searchText: string;
@@ -12,8 +13,8 @@ interface SearchFilterDockProps {
   setFilterOpen(update: (current: boolean) => boolean): void;
   kindFilters: Record<ProjectKind, boolean>;
   setKindFilters(update: (current: Record<ProjectKind, boolean>) => Record<ProjectKind, boolean>): void;
-  showExternal: boolean;
-  setShowExternal(value: boolean): void;
+  showPackages: boolean;
+  setShowPackages(value: boolean): void;
 }
 
 export function SearchFilterDock({
@@ -25,67 +26,194 @@ export function SearchFilterDock({
   setFilterOpen,
   kindFilters,
   setKindFilters,
-  showExternal,
-  setShowExternal,
+  showPackages,
+  setShowPackages,
 }: SearchFilterDockProps) {
-  const visibleSuggestions = useMemo(() => {
-    const query = searchText.trim().toLowerCase();
-    if (!query) return [];
+  const dockRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-    return suggestions
-      .filter((item) => item.label.toLowerCase().includes(query) || String(item.sublabel || "").toLowerCase().includes(query))
-      .slice(0, 8);
+  useEffect(() => {
+    if (!filterOpen) return;
+    const handler = (event: MouseEvent) => {
+      if (dockRef.current && !dockRef.current.contains(event.target as Node)) {
+        setFilterOpen(() => false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [filterOpen, setFilterOpen]);
+
+  const grouped = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    if (!query) return null;
+    const matching = suggestions.filter(
+      (item) =>
+        item.label.toLowerCase().includes(query) ||
+        String(item.sublabel || "").toLowerCase().includes(query),
+    );
+    return {
+      projects: matching.filter((s) => s.type === "project"),
+      packages: matching.filter((s) => s.type === "package"),
+    };
   }, [suggestions, searchText]);
 
+  const hasResults = grouped && (grouped.projects.length > 0 || grouped.packages.length > 0);
+  const flatResults = useMemo(
+    () => grouped ? [...grouped.projects, ...grouped.packages] : [],
+    [grouped],
+  );
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [searchText]);
+
+  const selectSuggestion = (id?: string) => {
+    if (!id) return;
+    onSuggestionSelect(id);
+    setSearchText("");
+  };
+
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      setSearchText("");
+      setFilterOpen(() => false);
+      return;
+    }
+
+    if (!flatResults.length) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((current) => (current + 1) % flatResults.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((current) => (current - 1 + flatResults.length) % flatResults.length);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      selectSuggestion(flatResults[activeIndex]?.id);
+    }
+  };
+
+  const resultIndex = (id: string) => flatResults.findIndex((item) => item.id === id);
+
   return (
-    <div className="top-right-dock">
+    <div className="search-dock" ref={dockRef}>
       <div className="dock-panel search-filter-panel">
         <div className="search-row">
           <input
             className="search-input"
             type="search"
             value={searchText}
-            placeholder="Search projects and packages..."
+            placeholder="Search projects and packages…"
+            title="Search project names, package IDs, and package classifications"
+            role="combobox"
+            aria-expanded={Boolean(grouped)}
+            aria-controls="search-suggestions"
+            aria-activedescendant={flatResults[activeIndex] ? `suggestion-${flatResults[activeIndex].id}` : undefined}
             onChange={(event) => setSearchText(event.target.value)}
+            onKeyDown={handleSearchKeyDown}
           />
-          <button className={`ghost-button filter-toggle ${filterOpen ? "active" : ""}`} type="button" title="Open filters" onClick={() => setFilterOpen((current) => !current)}>
+          <button
+            className={`ghost-button filter-toggle${filterOpen ? " active" : ""}`}
+            type="button"
+            aria-pressed={filterOpen}
+            title="Filter by type"
+            onClick={() => setFilterOpen((c) => !c)}
+          >
             Filter
           </button>
         </div>
 
-        {visibleSuggestions.length > 0 ? (
-          <div className="suggestions-list">
-            {visibleSuggestions.map((item) => (
-              <button key={`${item.type}:${item.id}`} className="suggestion-item" type="button" onClick={() => onSuggestionSelect(item.id)}>
-                <span className="suggestion-main">{item.label}</span>
-                <span className="suggestion-meta">{item.sublabel ? `${item.type} | ${item.sublabel}` : item.type}</span>
-              </button>
-            ))}
+        {hasResults ? (
+          <div className="suggestions-dropdown" id="search-suggestions" role="listbox">
+            {grouped.projects.length > 0 && (
+              <>
+                <div className="suggestions-section-header">Projects</div>
+                {grouped.projects.map((item) => {
+                  const index = resultIndex(item.id);
+                  return (
+                  <button
+                    key={item.id}
+                    id={`suggestion-${item.id}`}
+                    className={`suggestion-item${index === activeIndex ? " active" : ""}`}
+                    type="button"
+                    role="option"
+                    aria-selected={index === activeIndex}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onClick={() => selectSuggestion(item.id)}
+                  >
+                    <span className="suggestion-main">{item.label}</span>
+                    {item.kinds && item.kinds.length > 0 && (
+                      <span className="suggestion-tags">
+                        {item.kinds.map((kind) => (
+                          <span key={kind} className={`suggestion-kind-tag ${KIND_CLASS[kind]}`} title={KIND_LABELS[kind]}>
+                            {KIND_SHORT[kind]}
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                );})}
+              </>
+            )}
+            {grouped.packages.length > 0 && (
+              <>
+                <div className="suggestions-section-header">Packages</div>
+                {grouped.packages.map((item) => {
+                  const index = resultIndex(item.id);
+                  return (
+                  <button
+                    key={item.id}
+                    id={`suggestion-${item.id}`}
+                    className={`suggestion-item${index === activeIndex ? " active" : ""}`}
+                    type="button"
+                    role="option"
+                    aria-selected={index === activeIndex}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onClick={() => selectSuggestion(item.id)}
+                  >
+                    <span className="suggestion-main">{item.label}</span>
+                    {item.sublabel && <span className="suggestion-meta">{item.sublabel}</span>}
+                  </button>
+                );})}
+              </>
+            )}
           </div>
+        ) : grouped && !hasResults ? (
+          <div className="suggestions-empty">No results</div>
         ) : null}
 
-        {filterOpen ? (
+        {filterOpen && (
           <div className="filters-panel">
-            <div className="filter-list">
+            <div className="filter-pills">
               {DEFAULT_KINDS.map((kind) => (
-                <label key={kind} className="filter-item" title={KIND_NOTES[kind]}>
-                  <input
-                    type="checkbox"
-                    checked={kindFilters[kind] !== false}
-                    onChange={(event) => setKindFilters((current) => ({ ...current, [kind]: event.target.checked }))}
-                  />
-                  <span className={`shape-chip project-shape ${KIND_CLASS[kind]}`} />
-                  <span className="filter-text">{KIND_LABELS[kind]}</span>
-                </label>
+                <button
+                  key={kind}
+                  type="button"
+                  className={`kind-pill${kindFilters[kind] !== false ? " active" : ""}`}
+                  aria-pressed={kindFilters[kind] !== false}
+                  title={KIND_LABELS[kind]}
+                  onClick={() =>
+                    setKindFilters((c) => ({ ...c, [kind]: c[kind] === false ? true : false }))
+                  }
+                >
+                  <span className={`kind-pill-shape ${KIND_CLASS[kind]}`} title={KIND_LABELS[kind]} />
+                  {KIND_SHORT[kind]}
+                </button>
               ))}
-              <label className="filter-item" title="Show unresolved package leaves.">
-                <input type="checkbox" checked={showExternal} onChange={(event) => setShowExternal(event.target.checked)} />
-                <span className="shape-chip package-shape pkg-unknown" />
-                <span className="filter-text">External Packages</span>
-              </label>
+              <button
+                type="button"
+                className={`kind-pill package-pill${showPackages ? " active" : ""}`}
+                aria-pressed={showPackages}
+                title="Show external and unresolved package nodes. Internal package IDs stay searchable through their producer project."
+                onClick={() => setShowPackages(!showPackages)}
+              >
+                <span className="kind-pill-shape package-pill-shape" title="Package node" />
+                External / unknown packages
+              </button>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );

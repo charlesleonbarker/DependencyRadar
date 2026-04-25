@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Depmap.Parsing;
+namespace DependencyRadar.Parsing;
 
 /// <summary>
 /// Parses a Visual Studio .sln file by scanning for <c>Project(...) = "Name", "RelativePath", "{ProjectGuid}"</c> lines.

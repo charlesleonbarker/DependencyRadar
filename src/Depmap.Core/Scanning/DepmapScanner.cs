@@ -1,8 +1,8 @@
-using Depmap.Graph;
-using Depmap.Parsing;
-using Depmap.Rendering;
+using DependencyRadar.Graph;
+using DependencyRadar.Parsing;
+using DependencyRadar.Rendering;
 
-namespace Depmap.Scanning;
+namespace DependencyRadar.Scanning;
 
 public sealed record ScanRequest(
     IReadOnlyList<string> Roots,
@@ -28,7 +28,7 @@ public sealed record ScanSnapshot(
     string GraphJson,
     GraphSummary Summary);
 
-public sealed class DepmapScanner
+public sealed class DependencyRadarScanner
 {
     public ScanSnapshot Scan(ScanRequest request, Action<string>? log = null, bool indentJson = false)
     {

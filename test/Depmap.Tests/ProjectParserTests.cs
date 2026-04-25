@@ -1,8 +1,8 @@
-using Depmap.Parsing;
-using Depmap.Tests.Support;
+using DependencyRadar.Parsing;
+using DependencyRadar.Tests.Support;
 using Xunit;
 
-namespace Depmap.Tests;
+namespace DependencyRadar.Tests;
 
 public class ProjectParserTests
 {

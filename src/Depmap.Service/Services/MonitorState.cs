@@ -1,7 +1,7 @@
-using Depmap.Scanning;
-using Depmap.Service.Contracts;
+using DependencyRadar.Scanning;
+using DependencyRadar.Service.Contracts;
 
-namespace Depmap.Service.Services;
+namespace DependencyRadar.Service.Services;
 
 public sealed class MonitorState
 {

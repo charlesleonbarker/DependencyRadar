@@ -1,9 +1,9 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Depmap.Parsing;
+using DependencyRadar.Parsing;
 
-namespace Depmap.Graph;
+namespace DependencyRadar.Graph;
 
 /// <summary>
 /// Assembles the in-memory graph from parsed solutions and projects.
@@ -235,7 +235,51 @@ internal sealed class GraphBuilder
         var id = IdFor("repo", repoPath);
         var name = Path.GetFileName(repoPath.TrimEnd(Path.DirectorySeparatorChar));
         if (string.IsNullOrEmpty(name)) name = repoPath;
-        _repos[repoPath] = new RepoNode(id, name, repoPath);
+        var (branch, origin) = ReadGitMeta(repoPath);
+        _repos[repoPath] = new RepoNode(id, name, repoPath, branch, origin);
+    }
+
+    private static (string? Branch, string? Origin) ReadGitMeta(string repoPath)
+    {
+        string? branch = null;
+        string? origin = null;
+
+        try
+        {
+            var headPath = System.IO.Path.Combine(repoPath, ".git", "HEAD");
+            if (File.Exists(headPath))
+            {
+                var head = File.ReadAllText(headPath).Trim();
+                const string refPrefix = "ref: refs/heads/";
+                branch = head.StartsWith(refPrefix, StringComparison.Ordinal)
+                    ? head[refPrefix.Length..]
+                    : head.Length >= 7 ? head[..7] : head;
+            }
+
+            var configPath = System.IO.Path.Combine(repoPath, ".git", "config");
+            if (File.Exists(configPath))
+            {
+                var inOrigin = false;
+                foreach (var line in File.ReadLines(configPath))
+                {
+                    var trimmed = line.Trim();
+                    if (trimmed.StartsWith('['))
+                    {
+                        inOrigin = trimmed.Equals("[remote \"origin\"]", StringComparison.OrdinalIgnoreCase);
+                        continue;
+                    }
+                    if (inOrigin && trimmed.StartsWith("url", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var eq = trimmed.IndexOf('=');
+                        if (eq >= 0) origin = trimmed[(eq + 1)..].Trim();
+                        break;
+                    }
+                }
+            }
+        }
+        catch { /* git metadata is best-effort */ }
+
+        return (branch, origin);
     }
 
     private static string IdFor(string kind, string raw)

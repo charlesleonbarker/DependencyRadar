@@ -1,6 +1,6 @@
-using Depmap.Parsing;
+using DependencyRadar.Parsing;
 
-namespace Depmap.Graph;
+namespace DependencyRadar.Graph;
 
 internal static class Classifier
 {

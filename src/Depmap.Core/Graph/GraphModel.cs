@@ -1,4 +1,4 @@
-namespace Depmap.Graph;
+namespace DependencyRadar.Graph;
 
 internal enum NodeKind
 {
@@ -37,7 +37,7 @@ internal enum ProjectClassification
     Console       = 1 << 6,
 }
 
-internal sealed record RepoNode(string Id, string Name, string Path);
+internal sealed record RepoNode(string Id, string Name, string Path, string? Branch, string? Origin);
 
 internal sealed record SolutionNode(string Id, string Name, string Path, string RepoId);
 

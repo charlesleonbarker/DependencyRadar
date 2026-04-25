@@ -4,7 +4,7 @@ Context for AI agents working in this repo.
 
 ## What this repo is
 
-Depmap is a split .NET backend + React frontend for mapping the dependency web across a folder of .NET git repositories and answering *"what needs retesting if this package changes?"* via reverse-BFS blast-radius analysis.
+Dependency Radar is a split .NET backend + React frontend for mapping the dependency web across a folder of .NET git repositories and answering *"what needs retesting if this package changes?"* via reverse-BFS blast-radius analysis.
 
 The full architecture is in [`DESIGN.md`](DESIGN.md). Start there before making non-trivial changes.
 
@@ -37,13 +37,13 @@ README.md               user-facing README
 2. **Unknowns are first-class.** When something cannot be resolved locally, it stays `unknown` rather than guessed.
 3. **Multi-TFM projects = one node.** Dependency sets are unioned across target frameworks.
 4. **No test-runner output.** The UI lists affected test project paths; it does not generate `dotnet test` commands.
-5. **Frontend and backend are separate runtimes.** `Depmap.Service` is API-only. `Depmap.Web` consumes that API and is not hosted by the backend.
+5. **Frontend and backend are separate runtimes.** `DependencyRadar.Service` is API-only. `DependencyRadar.Web` consumes that API and is not hosted by the backend.
 6. **The produced-by edge is load-bearing.** `Package -> producing Project` closes the internal package loop.
 
 ## Conventions
 
 - `src/Depmap.Core/` and `src/Depmap.Service/` use `TreatWarningsAsErrors=true` and `Nullable=enable`.
-- Types are `internal` by default; `InternalsVisibleTo("Depmap.Tests")` exposes scanner internals to tests.
+- Types are `internal` by default; `InternalsVisibleTo("DependencyRadar.Tests")` exposes scanner internals to tests.
 - Parsers deliberately avoid `Microsoft.Build`.
 - Frontend is React + Cytoscape in `src/Depmap.Web`. Keep domain logic thin there.
 - Stable node IDs come from `GraphBuilder.IdFor(kind, raw)`.

@@ -1,7 +1,7 @@
-using Depmap.Parsing;
+using DependencyRadar.Parsing;
 using Xunit;
 
-namespace Depmap.Tests;
+namespace DependencyRadar.Tests;
 
 public class IgnoreMatcherTests
 {
