@@ -24,9 +24,11 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
     selector: ".n-repo",
     style: {
       shape: "round-rectangle",
-      "background-opacity": 0.06,
+      "background-opacity": 0,
       "background-color": "#2563eb",
       "border-style": "dashed",
+      "border-color": "#2563eb",
+      "border-opacity": 0.45,
       "text-valign": "top",
       "text-halign": "left",
       "text-justification": "left",
@@ -87,6 +89,7 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
   },
   { selector: ".is-filtered", style: { display: "none" } },
   { selector: ".dim", style: { opacity: 0.07 } },
+  { selector: "edge.dim", style: { "target-arrow-shape": "none" } },
   { selector: ".hilite", style: { opacity: 1, "z-index": 20 } },
   {
     selector: ".ancestor",

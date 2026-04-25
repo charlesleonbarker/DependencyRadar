@@ -21,7 +21,7 @@ export function SelectionPopover({ selection, onClose, onSelect }: SelectionPopo
   } else if (node.type === "package") {
     details.push(["Classification", node.classification || "unknown"]);
     details.push(["Versions", (node.versions || []).join(", ") || "Unknown"]);
-    details.push(["Produced by", selection.producedByProject?.name || node.producedBy || "Not resolved"]);
+    details.push(["Produced by", selection.producedByProject?.name || "Not resolved"]);
   }
 
   return (

@@ -262,9 +262,6 @@ button, input { font: inherit; }
   border: 1px solid rgba(15,23,42,0.25);
 }
 
-.package-shape { width: 18px; height: 18px; transform: rotate(45deg); }
-
-.pkg-unknown { background: #64748b; }
 .kind-library { background: #94a3b8; }
 .kind-test { background: #8b5cf6; }
 .kind-web { background: #f59e0b; }
@@ -314,21 +311,6 @@ button, input { font: inherit; }
   color: var(--ink);
 }
 
-.help-button {
-  appearance: none;
-  width: 42px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--muted);
-  cursor: pointer;
-  font: inherit;
-  border: none;
-  padding: 0;
-}
 
 .selection-popover {
   min-height: 0;
@@ -367,12 +349,6 @@ button, input { font: inherit; }
   overflow-wrap: anywhere;
 }
 
-.selection-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-}
 
 .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .pill {
@@ -573,7 +549,6 @@ button, input { font: inherit; }
 
 .modal-body { padding: 20px 24px 24px; }
 .modal-section + .modal-section { margin-top: 22px; }
-.product-credit { margin-top: 8px; }
 
 .key-grid {
   display: grid;
@@ -592,7 +567,6 @@ button, input { font: inherit; }
 .swatch-selected { width: 24px; height: 16px; border-radius: 6px; background: rgba(37,99,235,0.12); border: 3px solid #2563eb; }
 .swatch-ancestor { width: 24px; height: 16px; border-radius: 6px; background: rgba(220,38,38,0.18); border: 3px solid #dc2626; box-shadow: 0 0 7px rgba(220,38,38,0.38); }
 .swatch-descendant { width: 24px; height: 16px; border-radius: 6px; background: rgba(15,118,110,0.18); border: 3px solid #0f766e; box-shadow: 0 0 7px rgba(15,118,110,0.38); }
-.color-chip { width: 16px; height: 16px; border-radius: 999px; display: inline-block; }
 .edge-swatch { position: relative; width: 36px; height: 14px; border-top-width: 3px; border-top-style: solid; transform: translateY(6px); }
 .edge-swatch::after {
   content: "";

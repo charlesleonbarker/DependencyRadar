@@ -193,9 +193,7 @@ export function SearchFilterDock({
                   className={`kind-pill${kindFilters[kind] !== false ? " active" : ""}`}
                   aria-pressed={kindFilters[kind] !== false}
                   title={KIND_LABELS[kind]}
-                  onClick={() =>
-                    setKindFilters((c) => ({ ...c, [kind]: c[kind] === false ? true : false }))
-                  }
+                  onClick={() => setKindFilters((c) => ({ ...c, [kind]: !c[kind] }))}
                 >
                   <span className={`kind-pill-shape ${KIND_CLASS[kind]}`} title={KIND_LABELS[kind]} />
                   {KIND_SHORT[kind]}
