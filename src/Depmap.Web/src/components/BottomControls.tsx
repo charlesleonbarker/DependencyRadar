@@ -1,9 +1,9 @@
 import type { LayoutId } from "../graph/cytoscapeModel";
 
 const LAYOUT_OPTIONS: Array<{ id: LayoutId; label: string; note: string }> = [
-  { id: "dagre",      label: "Flow",  note: "Best overview for dependency direction." },
-  { id: "fcose",      label: "Force", note: "Good for cluster discovery." },
-  { id: "concentric", label: "Focus", note: "Most-referenced nodes at the centre." },
+  { id: "dagre",      label: "Dependency Paths", note: "Arrange projects left-to-right so dependency direction is easier to trace." },
+  { id: "fcose",      label: "Cluster Map",      note: "Separate dense repo and package clusters when the graph is busy." },
+  { id: "concentric", label: "Most Referenced",  note: "Place heavily referenced nodes nearer the centre." },
 ];
 
 interface BottomControlsProps {

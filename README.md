@@ -4,7 +4,7 @@ Dependency Radar is a local-first .NET dependency impact tool made by Charlie Ba
 
 It visualizes dependency relationships across a folder of .NET repositories and helps developers and testers understand what needs retesting when a project or package changes.
 
-Source: [github.com/charlesleonbarker/Depmap](https://github.com/charlesleonbarker/Depmap)
+Source: [github.com/charlesleonbarker/DependencyRadar](https://github.com/charlesleonbarker/DependencyRadar)
 
 - `DependencyRadar.Service` watches configured roots, rescans on change, and exposes the current graph over HTTP.
 - `DependencyRadar.Web` is a separate React app that consumes that API and renders the map.

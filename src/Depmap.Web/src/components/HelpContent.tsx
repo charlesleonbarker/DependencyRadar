@@ -15,7 +15,6 @@ export function HelpContent({ status, counts, onRescan, rescanning }: HelpConten
       <section className="modal-section">
         <h3>What this is</h3>
         <p className="muted">Dependency Radar walks your configured repo roots and maps every .NET project, package, and solution into a live dependency graph. Select any node to trace its blast radius: which tests to run and which deployables are affected.</p>
-        <p className="muted product-credit">Made by Charlie Barker. <a href="https://github.com/charlesleonbarker/Depmap" target="_blank" rel="noreferrer">View the GitHub repo</a>.</p>
       </section>
 
       <section className="modal-section">
@@ -25,7 +24,7 @@ export function HelpContent({ status, counts, onRescan, rescanning }: HelpConten
           <li>Selecting a node highlights affected consumers and dependencies, then fits the visible context into the viewport.</li>
           <li>The inspector opens under search and separates direct and transitive affected projects.</li>
           <li>Use <strong>Filters</strong> to hide project types or show unresolved package nodes when package-level inspection matters.</li>
-          <li>Switch layouts bottom-right — <strong>Flow</strong> is best for tracing dependency direction; <strong>Force</strong> reveals clusters in dense graphs.</li>
+          <li>Switch layouts bottom-right: <strong>Dependency Paths</strong> traces direction, <strong>Cluster Map</strong> separates dense areas, and <strong>Most Referenced</strong> centres high-traffic nodes.</li>
         </ul>
       </section>
 
@@ -55,10 +54,10 @@ export function HelpContent({ status, counts, onRescan, rescanning }: HelpConten
           </div>
           <div className="key-block">
             <div className="key-label">Edges</div>
-            <div className="key-item"><span className="edge-swatch edge-project" /><span>Project reference</span></div>
-            <div className="key-item"><span className="edge-swatch edge-package" /><span>Direct package ref</span></div>
-            <div className="key-item"><span className="edge-swatch edge-transitive" /><span>Indirect (restore data)</span></div>
-            <div className="key-item"><span className="edge-swatch edge-produced" /><span>Produced by project</span></div>
+            <div className="key-item edge-key"><span className="edge-swatch edge-project" /><span>Project reference</span></div>
+            <div className="key-item edge-key"><span className="edge-swatch edge-package" /><span>Direct package ref</span></div>
+            <div className="key-item edge-key"><span className="edge-swatch edge-transitive" /><span>Indirect (restore data)</span></div>
+            <div className="key-item edge-key"><span className="edge-swatch edge-produced" /><span>Produced by project</span></div>
           </div>
         </div>
       </section>
@@ -81,7 +80,7 @@ export function HelpContent({ status, counts, onRescan, rescanning }: HelpConten
 
       <section className="modal-section">
         <h3>License & credits</h3>
-        <p className="muted">Dependency Radar is made by Charlie Barker and licensed under the MIT License. Source: <a href="https://github.com/charlesleonbarker/Depmap" target="_blank" rel="noreferrer">github.com/charlesleonbarker/Depmap</a>.</p>
+        <p className="muted">Dependency Radar is made by Charlie Barker and licensed under the MIT License. <a href="https://github.com/charlesleonbarker/DependencyRadar" target="_blank" rel="noreferrer">github.com/charlesleonbarker/DependencyRadar</a>.</p>
         <div className="credits-list">
           <Credit name="React" license="MIT" credit="Copyright (c) Facebook, Inc. and its affiliates." />
           <Credit name="React DOM" license="MIT" credit="Copyright (c) Facebook, Inc. and its affiliates." />

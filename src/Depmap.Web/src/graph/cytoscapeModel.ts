@@ -66,10 +66,10 @@ export function runLayout(cy: cytoscape.Core | null, layout: LayoutId): void {
   const eles = cy.elements().not(".is-filtered");
   const config: cytoscape.LayoutOptions =
     layout === "fcose"
-      ? ({ name: "fcose", eles, animate: false, nodeRepulsion: 6200, idealEdgeLength: 120, packComponents: true, gravity: 0.16, fit: true, padding: 52 } as cytoscape.LayoutOptions)
+      ? ({ name: "fcose", eles, animate: false, nodeRepulsion: 6800, idealEdgeLength: 142, packComponents: true, gravity: 0.14, fit: true, padding: 64 } as cytoscape.LayoutOptions)
       : layout === "concentric"
-        ? ({ name: "concentric", eles, animate: false, fit: true, padding: 52, concentric: (node: cytoscape.NodeSingular) => node.indegree(false), levelWidth: () => 1 } as cytoscape.LayoutOptions)
-      : ({ name: "dagre", eles, rankDir: "LR", ranker: "network-simplex", nodeSep: 34, rankSep: 110, edgeSep: 28, nodeDimensionsIncludeLabels: true, fit: true, padding: 52 } as cytoscape.LayoutOptions);
+        ? ({ name: "concentric", eles, animate: false, fit: true, padding: 64, minNodeSpacing: 42, concentric: (node: cytoscape.NodeSingular) => node.indegree(false), levelWidth: () => 1 } as cytoscape.LayoutOptions)
+      : ({ name: "dagre", eles, rankDir: "LR", ranker: "network-simplex", nodeSep: 46, rankSep: 132, edgeSep: 36, nodeDimensionsIncludeLabels: true, fit: true, padding: 64 } as cytoscape.LayoutOptions);
 
   cy.layout(config).run();
 }
