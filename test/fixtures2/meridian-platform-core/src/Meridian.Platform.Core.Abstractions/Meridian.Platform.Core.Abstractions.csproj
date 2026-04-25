@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>Meridian.Platform.Core.Abstractions</PackageId>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+</Project>

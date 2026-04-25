@@ -1,0 +1,20 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Messaging.Abstractions", "src\Meridian.Infrastructure.Messaging.Abstractions\Meridian.Infrastructure.Messaging.Abstractions.csproj", "{FF0E0001-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Messaging.Core", "src\Meridian.Infrastructure.Messaging.Core\Meridian.Infrastructure.Messaging.Core.csproj", "{FF0E0002-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Messaging.Kafka", "src\Meridian.Infrastructure.Messaging.Kafka\Meridian.Infrastructure.Messaging.Kafka.csproj", "{FF0E0003-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Messaging.InMemory", "src\Meridian.Infrastructure.Messaging.InMemory\Meridian.Infrastructure.Messaging.InMemory.csproj", "{FF0E0004-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Messaging.Abstractions.Tests", "tests\Meridian.Infrastructure.Messaging.Abstractions.Tests\Meridian.Infrastructure.Messaging.Abstractions.Tests.csproj", "{FF0E0005-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Messaging.Core.Tests", "tests\Meridian.Infrastructure.Messaging.Core.Tests\Meridian.Infrastructure.Messaging.Core.Tests.csproj", "{FF0E0006-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Messaging.Kafka.Tests", "tests\Meridian.Infrastructure.Messaging.Kafka.Tests\Meridian.Infrastructure.Messaging.Kafka.Tests.csproj", "{FF0E0007-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Messaging.Integration.Tests", "tests\Meridian.Infrastructure.Messaging.Integration.Tests\Meridian.Infrastructure.Messaging.Integration.Tests.csproj", "{FF0E0008-0000-0000-0000-000000000000}"
+EndProject
+Global
+EndGlobal

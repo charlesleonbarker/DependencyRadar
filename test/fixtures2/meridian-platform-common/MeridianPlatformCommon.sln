@@ -1,0 +1,20 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Common.Logging", "src\Meridian.Platform.Common.Logging\Meridian.Platform.Common.Logging.csproj", "{FF020001-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Common.Resilience", "src\Meridian.Platform.Common.Resilience\Meridian.Platform.Common.Resilience.csproj", "{FF020002-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Common.Caching", "src\Meridian.Platform.Common.Caching\Meridian.Platform.Common.Caching.csproj", "{FF020003-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Common.Http", "src\Meridian.Platform.Common.Http\Meridian.Platform.Common.Http.csproj", "{FF020004-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Common.Logging.Tests", "tests\Meridian.Platform.Common.Logging.Tests\Meridian.Platform.Common.Logging.Tests.csproj", "{FF020005-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Common.Resilience.Tests", "tests\Meridian.Platform.Common.Resilience.Tests\Meridian.Platform.Common.Resilience.Tests.csproj", "{FF020006-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Common.Caching.Tests", "tests\Meridian.Platform.Common.Caching.Tests\Meridian.Platform.Common.Caching.Tests.csproj", "{FF020007-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Common.Http.Tests", "tests\Meridian.Platform.Common.Http.Tests\Meridian.Platform.Common.Http.Tests.csproj", "{FF020008-0000-0000-0000-000000000000}"
+EndProject
+Global
+EndGlobal

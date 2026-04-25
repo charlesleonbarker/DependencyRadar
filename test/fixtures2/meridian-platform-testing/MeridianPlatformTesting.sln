@@ -1,0 +1,16 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Testing.Abstractions", "src\Meridian.Platform.Testing.Abstractions\Meridian.Platform.Testing.Abstractions.csproj", "{FF030001-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Testing.Builders", "src\Meridian.Platform.Testing.Builders\Meridian.Platform.Testing.Builders.csproj", "{FF030002-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Testing.Fakes", "src\Meridian.Platform.Testing.Fakes\Meridian.Platform.Testing.Fakes.csproj", "{FF030003-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Testing.Integration", "src\Meridian.Platform.Testing.Integration\Meridian.Platform.Testing.Integration.csproj", "{FF030004-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Testing.Abstractions.Tests", "tests\Meridian.Platform.Testing.Abstractions.Tests\Meridian.Platform.Testing.Abstractions.Tests.csproj", "{FF030005-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Testing.Integration.Tests", "tests\Meridian.Platform.Testing.Integration.Tests\Meridian.Platform.Testing.Integration.Tests.csproj", "{FF030006-0000-0000-0000-000000000000}"
+EndProject
+Global
+EndGlobal

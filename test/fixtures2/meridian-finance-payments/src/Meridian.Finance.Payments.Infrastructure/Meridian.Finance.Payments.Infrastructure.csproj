@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meridian.Finance.Payments.Domain\Meridian.Finance.Payments.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Meridian.Platform.Common.Logging" Version="2.0.0" />
+    <PackageReference Include="Meridian.Platform.Common.Resilience" Version="2.2.0" />
+    <PackageReference Include="Stripe.net" Version="43.0.0" />
+  </ItemGroup>
+
+</Project>

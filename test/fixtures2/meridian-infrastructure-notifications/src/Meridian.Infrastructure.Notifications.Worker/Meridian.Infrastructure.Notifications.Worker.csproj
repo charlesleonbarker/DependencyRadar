@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meridian.Infrastructure.Notifications.Email\Meridian.Infrastructure.Notifications.Email.csproj" />
+    <ProjectReference Include="..\..\src\Meridian.Infrastructure.Notifications.Sms\Meridian.Infrastructure.Notifications.Sms.csproj" />
+    <ProjectReference Include="..\..\src\Meridian.Infrastructure.Notifications.Push\Meridian.Infrastructure.Notifications.Push.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Meridian.Infrastructure.Messaging.Core" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

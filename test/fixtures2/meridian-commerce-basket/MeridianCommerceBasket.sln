@@ -1,0 +1,18 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Commerce.Basket.Contracts", "src\Meridian.Commerce.Basket.Contracts\Meridian.Commerce.Basket.Contracts.csproj", "{FF070001-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Commerce.Basket.Domain", "src\Meridian.Commerce.Basket.Domain\Meridian.Commerce.Basket.Domain.csproj", "{FF070002-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Commerce.Basket.Api", "src\Meridian.Commerce.Basket.Api\Meridian.Commerce.Basket.Api.csproj", "{FF070003-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Commerce.Basket.Worker", "src\Meridian.Commerce.Basket.Worker\Meridian.Commerce.Basket.Worker.csproj", "{FF070004-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Commerce.Basket.Domain.Tests", "tests\Meridian.Commerce.Basket.Domain.Tests\Meridian.Commerce.Basket.Domain.Tests.csproj", "{FF070005-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Commerce.Basket.Api.Tests", "tests\Meridian.Commerce.Basket.Api.Tests\Meridian.Commerce.Basket.Api.Tests.csproj", "{FF070006-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Commerce.Basket.Integration.Tests", "tests\Meridian.Commerce.Basket.Integration.Tests\Meridian.Commerce.Basket.Integration.Tests.csproj", "{FF070007-0000-0000-0000-000000000000}"
+EndProject
+Global
+EndGlobal

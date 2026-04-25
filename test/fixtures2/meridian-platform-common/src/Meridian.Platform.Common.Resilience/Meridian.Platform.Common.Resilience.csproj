@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>Meridian.Platform.Common.Resilience</PackageId>
+    <Version>2.2.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Meridian.Platform.Core.Abstractions" Version="1.0.0" />
+    <PackageReference Include="Polly" Version="8.4.0" />
+  </ItemGroup>
+
+</Project>

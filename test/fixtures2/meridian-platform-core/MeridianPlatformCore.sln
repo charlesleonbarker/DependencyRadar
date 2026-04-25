@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Core.Abstractions", "src\Meridian.Platform.Core.Abstractions\Meridian.Platform.Core.Abstractions.csproj", "{FF010001-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Core.Common", "src\Meridian.Platform.Core.Common\Meridian.Platform.Core.Common.csproj", "{FF010002-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Core.Extensions", "src\Meridian.Platform.Core.Extensions\Meridian.Platform.Core.Extensions.csproj", "{FF010003-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Core.Validation", "src\Meridian.Platform.Core.Validation\Meridian.Platform.Core.Validation.csproj", "{FF010004-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Core.Diagnostics", "src\Meridian.Platform.Core.Diagnostics\Meridian.Platform.Core.Diagnostics.csproj", "{FF010005-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Core.Diagnostics.Tests", "tests\Meridian.Platform.Core.Diagnostics.Tests\Meridian.Platform.Core.Diagnostics.Tests.csproj", "{FF010006-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Core.Abstractions.Tests", "tests\Meridian.Platform.Core.Abstractions.Tests\Meridian.Platform.Core.Abstractions.Tests.csproj", "{FF010007-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Core.Common.Tests", "tests\Meridian.Platform.Core.Common.Tests\Meridian.Platform.Core.Common.Tests.csproj", "{FF010008-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Core.Extensions.Tests", "tests\Meridian.Platform.Core.Extensions.Tests\Meridian.Platform.Core.Extensions.Tests.csproj", "{FF010009-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Platform.Core.Validation.Tests", "tests\Meridian.Platform.Core.Validation.Tests\Meridian.Platform.Core.Validation.Tests.csproj", "{FF01000A-0000-0000-0000-000000000000}"
+EndProject
+Global
+EndGlobal

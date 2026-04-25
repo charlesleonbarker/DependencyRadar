@@ -1,0 +1,20 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Finance.Payments.Contracts", "src\Meridian.Finance.Payments.Contracts\Meridian.Finance.Payments.Contracts.csproj", "{FF0B0001-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Finance.Payments.Domain", "src\Meridian.Finance.Payments.Domain\Meridian.Finance.Payments.Domain.csproj", "{FF0B0002-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Finance.Payments.Infrastructure", "src\Meridian.Finance.Payments.Infrastructure\Meridian.Finance.Payments.Infrastructure.csproj", "{FF0B0003-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Finance.Payments.Api", "src\Meridian.Finance.Payments.Api\Meridian.Finance.Payments.Api.csproj", "{FF0B0004-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Finance.Payments.Worker", "src\Meridian.Finance.Payments.Worker\Meridian.Finance.Payments.Worker.csproj", "{FF0B0005-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Finance.Payments.Domain.Tests", "tests\Meridian.Finance.Payments.Domain.Tests\Meridian.Finance.Payments.Domain.Tests.csproj", "{FF0B0006-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Finance.Payments.Api.Tests", "tests\Meridian.Finance.Payments.Api.Tests\Meridian.Finance.Payments.Api.Tests.csproj", "{FF0B0007-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Finance.Payments.Integration.Tests", "tests\Meridian.Finance.Payments.Integration.Tests\Meridian.Finance.Payments.Integration.Tests.csproj", "{FF0B0008-0000-0000-0000-000000000000}"
+EndProject
+Global
+EndGlobal

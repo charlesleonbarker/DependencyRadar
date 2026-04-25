@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meridian.Commerce.Checkout.Contracts\Meridian.Commerce.Checkout.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Meridian.Platform.Core.Common" Version="1.5.0" />
+    <PackageReference Include="Meridian.Commerce.Basket.Contracts" Version="1.1.0" />
+    <PackageReference Include="Meridian.Commerce.Catalog.Contracts" Version="1.3.0" />
+  </ItemGroup>
+
+</Project>

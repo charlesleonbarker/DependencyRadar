@@ -1,0 +1,22 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Notifications.Abstractions", "src\Meridian.Infrastructure.Notifications.Abstractions\Meridian.Infrastructure.Notifications.Abstractions.csproj", "{FF0F0001-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Notifications.Core", "src\Meridian.Infrastructure.Notifications.Core\Meridian.Infrastructure.Notifications.Core.csproj", "{FF0F0002-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Notifications.Email", "src\Meridian.Infrastructure.Notifications.Email\Meridian.Infrastructure.Notifications.Email.csproj", "{FF0F0003-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Notifications.Sms", "src\Meridian.Infrastructure.Notifications.Sms\Meridian.Infrastructure.Notifications.Sms.csproj", "{FF0F0004-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Notifications.Push", "src\Meridian.Infrastructure.Notifications.Push\Meridian.Infrastructure.Notifications.Push.csproj", "{FF0F0005-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Notifications.Worker", "src\Meridian.Infrastructure.Notifications.Worker\Meridian.Infrastructure.Notifications.Worker.csproj", "{FF0F0006-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Notifications.Core.Tests", "tests\Meridian.Infrastructure.Notifications.Core.Tests\Meridian.Infrastructure.Notifications.Core.Tests.csproj", "{FF0F0007-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Notifications.Email.Tests", "tests\Meridian.Infrastructure.Notifications.Email.Tests\Meridian.Infrastructure.Notifications.Email.Tests.csproj", "{FF0F0008-0000-0000-0000-000000000000}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meridian.Infrastructure.Notifications.Integration.Tests", "tests\Meridian.Infrastructure.Notifications.Integration.Tests\Meridian.Infrastructure.Notifications.Integration.Tests.csproj", "{FF0F0009-0000-0000-0000-000000000000}"
+EndProject
+Global
+EndGlobal
