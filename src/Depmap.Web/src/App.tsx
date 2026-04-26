@@ -1,21 +1,22 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DepmapGraph, GraphSummary, MonitorStatus, ProjectKind } from "./api/types";
-import { apiUrl, fetchGraph, fetchStatus, requestRescan } from "./api/client";
+import { apiUrl, fetchGraph, fetchStatus } from "./api/client";
 import { BottomControls } from "./components/BottomControls";
 import { GraphCanvas } from "./components/GraphCanvas";
 import { HelpContent } from "./components/HelpContent";
 import { Modal } from "./components/Modal";
 import { SearchFilterDock } from "./components/SearchFilterDock";
 import { SelectionPopover } from "./components/SelectionPopover";
-import { buildModel, describeSelection } from "./domain/graphModel";
+import { buildModel, describeSelection, type GraphModel } from "./domain/graphModel";
 import { DEFAULT_KINDS } from "./domain/projectKinds";
 import type { FilterState, LayoutId } from "./graph/cytoscapeModel";
 
 const defaultKindFilters = Object.fromEntries(DEFAULT_KINDS.map((kind) => [kind, true])) as Record<ProjectKind, boolean>;
 
-function selectionUrl(selectionId: string | null): string {
+function selectionUrl(selectionId: string | null, model: GraphModel | null): string {
   const url = new URL(window.location.href);
-  if (selectionId) url.searchParams.set("node", selectionId);
+  const node = selectionId ? model?.nodesById[selectionId] : null;
+  if (selectionId) url.searchParams.set("node", node?.name ?? selectionId);
   else url.searchParams.delete("node");
   return `${url.pathname}${url.search}${url.hash}`;
 }
@@ -24,18 +25,29 @@ function selectionFromUrl(): string | null {
   return new URLSearchParams(window.location.search).get("node");
 }
 
+function resolveSelectionFromUrlValue(model: GraphModel, value: string): string | null {
+  if (model.nodesById[value]) return value;
+  const lower = value.toLowerCase();
+  const match = Object.values(model.nodesById).find((node) => node.name.toLowerCase() === lower);
+  return match?.id ?? null;
+}
+
 export function App() {
   const [status, setStatus] = useState<MonitorStatus | null>(null);
   const [graph, setGraph] = useState<DepmapGraph | null>(null);
   const [error, setError] = useState("");
   const [selectionId, setSelectionId] = useState<string | null>(null);
+  const [hoverPathIds, setHoverPathIds] = useState<string[][] | null>(null);
   const [layout, setLayout] = useState<LayoutId>("dagre");
+  const [layoutRunKey, setLayoutRunKey] = useState(0);
+  const [nodeScale, setNodeScale] = useState(1);
   const [searchText, setSearchText] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
-  const [rescanning, setRescanning] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [kindFilters, setKindFilters] = useState(defaultKindFilters);
+  const [repoFilters, setRepoFilters] = useState<Record<string, boolean>>({});
   const [showPackages, setShowPackages] = useState(false);
+  const [viewportResetKey, setViewportResetKey] = useState(0);
   const historyReady = useRef(false);
 
   const model = useMemo(() => (graph ? buildModel(graph) : null), [graph]);
@@ -60,33 +72,30 @@ export function App() {
     }
   }, [syncFromBackend]);
 
-  const rescan = useCallback(async () => {
-    setRescanning(true);
-    try {
-      await requestRescan();
-      await syncFromBackend();
-      setError("");
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : String(nextError));
-    } finally {
-      setRescanning(false);
-    }
-  }, [syncFromBackend]);
-
   const setSelectionFromHistory = useCallback((id: string | null) => {
     setSelectionId(id);
   }, []);
 
   const replaceSelectionHistory = useCallback((id: string | null) => {
-    window.history.replaceState({ selectionId: id }, "", selectionUrl(id));
-  }, []);
+    window.history.replaceState({ selectionId: id }, "", selectionUrl(id, model));
+  }, [model]);
 
   const selectNode = useCallback((id: string | null) => {
     setSelectionId(id);
-    const nextUrl = selectionUrl(id);
+    const nextUrl = selectionUrl(id, model);
     if (nextUrl !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
       window.history.pushState({ selectionId: id }, "", nextUrl);
     }
+  }, [model]);
+  const closeSelection = useCallback(() => {
+    selectNode(null);
+    setHoverPathIds(null);
+    setViewportResetKey((key) => key + 1);
+  }, [selectNode]);
+
+  const chooseLayout = useCallback((nextLayout: LayoutId) => {
+    setLayout(nextLayout);
+    setLayoutRunKey((key) => key + 1);
   }, []);
 
   useEffect(() => {
@@ -106,8 +115,9 @@ export function App() {
 
   useEffect(() => {
     if (selectionId && model && !model.nodesById[selectionId]) {
-      setSelectionId(null);
-      if (historyReady.current) replaceSelectionHistory(null);
+      const resolvedId = resolveSelectionFromUrlValue(model, selectionId);
+      setSelectionId(resolvedId);
+      if (historyReady.current) replaceSelectionHistory(resolvedId);
     }
   }, [model, replaceSelectionHistory, selectionId]);
 
@@ -116,6 +126,14 @@ export function App() {
       setShowPackages(true);
     }
   }, [model, selectionId]);
+
+  useEffect(() => {
+    if (!graph) return;
+    setRepoFilters((current) => {
+      const next = Object.fromEntries(graph.repos.map((repo) => [repo.id, current[repo.id] !== false]));
+      return next;
+    });
+  }, [graph]);
 
   useEffect(() => {
     refresh();
@@ -133,7 +151,7 @@ export function App() {
     packageCount: graph?.packages.length || 0,
     edgeCount: graph?.edges.length || 0,
   };
-  const filterState: FilterState = useMemo(() => ({ kindFilters, showExternal: showPackages }), [kindFilters, showPackages]);
+  const filterState: FilterState = useMemo(() => ({ kindFilters, repoFilters, showExternal: showPackages }), [kindFilters, repoFilters, showPackages]);
 
   return (
     <>
@@ -143,6 +161,8 @@ export function App() {
             searchText={searchText}
             setSearchText={setSearchText}
             suggestions={model?.suggestions || []}
+            repos={graph?.repos || []}
+            compactRepoFilter={Boolean(selection)}
             onSuggestionSelect={(id) => {
               if (model?.nodesById[id]?.type === "package" && !model.collapsedPackageTargets[id]) {
                 setShowPackages(true);
@@ -154,13 +174,17 @@ export function App() {
             setFilterOpen={setFilterOpen}
             kindFilters={kindFilters}
             setKindFilters={setKindFilters}
+            repoFilters={repoFilters}
+            setRepoFilters={setRepoFilters}
             showPackages={showPackages}
             setShowPackages={setShowPackages}
           />
           <SelectionPopover
             selection={selection}
-            onClose={() => selectNode(null)}
+            showExternal={showPackages}
+            onClose={closeSelection}
             onSelect={selectNode}
+            onHoverPath={setHoverPathIds}
           />
         </div>
 
@@ -176,24 +200,28 @@ export function App() {
                 graph={graph}
                 model={model}
                 selectionId={selectionId}
+                hoverPathIds={hoverPathIds}
+                viewportResetKey={viewportResetKey}
                 onSelectionChange={selectNode}
                 layout={layout}
+                layoutRunKey={layoutRunKey}
                 groupByRepo
                 filterState={filterState}
                 searchText={searchText}
                 status={status}
+                nodeScale={nodeScale}
                 leftInset={selection ? 560 : 0}
               />
             </div>
 
-            <BottomControls layout={layout} setLayout={setLayout} />
+            <BottomControls layout={layout} nodeScale={nodeScale} setLayout={chooseLayout} setNodeScale={setNodeScale} />
             {error ? <div className="map-status map-status-error"><strong>Frontend error</strong><span>{error}</span></div> : null}
           </div>
         </main>
       </div>
 
       <Modal open={helpOpen} onClose={() => setHelpOpen(false)} eyebrow="Dependency Radar" title=".NET Impact Radar">
-        <HelpContent status={status} counts={counts} onRescan={rescan} rescanning={rescanning} />
+        <HelpContent status={status} counts={counts} />
       </Modal>
     </>
   );

@@ -1,142 +1,290 @@
-import type { ImpactProject, ProjectGroup, SelectionDetails } from "../domain/graphModel";
-import { effectiveProjectKinds, KIND_LABELS } from "../domain/projectKinds";
+import type { AnyGraphNode, ProjectKind, ProjectNode } from "../api/types";
+import type { DependencyGroup, DependencyItem, ImpactProject, ProjectGroup, SelectionDetails } from "../domain/graphModel";
+import { effectiveProjectKinds, KIND_CLASS, KIND_LABELS, KIND_SHORT } from "../domain/projectKinds";
 
 interface SelectionPopoverProps {
   selection: SelectionDetails | null;
+  showExternal: boolean;
   onClose(): void;
   onSelect(id: string): void;
+  onHoverPath(pathIds: string[][] | null): void;
 }
 
-export function SelectionPopover({ selection, onClose, onSelect }: SelectionPopoverProps) {
+export function SelectionPopover({ selection, showExternal, onClose, onSelect, onHoverPath }: SelectionPopoverProps) {
   if (!selection) return null;
 
   const { node } = selection;
-  const details: Array<[string, string]> = [["Type", node.type], ["Name", node.name]];
-
-  if (node.type === "project") {
-    details.push(["SDK", node.sdk || "Unknown"]);
-    details.push(["Kinds", effectiveProjectKinds(node.kinds).join(", ")]);
-    details.push(["TFMs", (node.tfms || []).join(", ") || "Unknown"]);
-    details.push(["Package ID", node.packageId || "Not packable"]);
-  } else if (node.type === "package") {
-    details.push(["Classification", node.classification || "unknown"]);
-    details.push(["Versions", (node.versions || []).join(", ") || "Unknown"]);
-    details.push(["Produced by", selection.producedByProject?.name || "Not resolved"]);
-  }
 
   return (
     <div className="selection-popover">
-      <div className="selection-card">
-        <div className="selection-header">
-          <h2>{node.name}</h2>
-          <button className="ghost-button" type="button" title="Close details panel" onClick={onClose}>Close</button>
-        </div>
-
-        {node.type === "project" ? (
-          <div className="pill-row">
-            {effectiveProjectKinds(node.kinds).map((kind) => (
-              <span key={kind} className={`pill ${kind}`} title={KIND_LABELS[kind]}>{kind}</span>
-            ))}
+      <div className="selection-card" onMouseLeave={() => onHoverPath(null)}>
+        <div className="selection-sticky-header">
+          <div className="selection-header">
+            <h2><DottedName value={node.name} /></h2>
+            <button className="ghost-button" type="button" title="Close details panel" onClick={onClose}>Close</button>
           </div>
-        ) : null}
 
-        {node.type === "package" && selection.producedByProject ? (
-          <button
-            className="package-producer-card"
-            type="button"
-            title="Open the project that produces this internal NuGet package"
-            onClick={() => onSelect(selection.producedByProject!.id)}
-          >
-            <span>
-              <strong>Internal package</strong>
-              <small>Produced by {selection.producedByProject.name}</small>
-            </span>
-            <span className="package-producer-action">Open producer</span>
-          </button>
-        ) : null}
-
-        <div className="details-grid">
-          {details.map(([label, value]) => (
-            <div className="details-row" key={label} title={detailHelp(label)}>
-              <div className="details-label">{label}</div>
-              <div className="details-value">{value}</div>
+          {node.type === "project" ? (
+            <div className="pill-row">
+              {effectiveProjectKinds(node.kinds).map((kind) => (
+                <span key={kind} className={`pill ${kind}`} title={KIND_LABELS[kind]}>{KIND_SHORT[kind]}</span>
+              ))}
             </div>
-          ))}
-        </div>
+          ) : null}
 
-        <DependencySummary count={selection.dependencyCount} />
-        <ImpactList title="Tests to run" groups={selection.tests} onSelect={onSelect} />
-        <ImpactList title="Deployables to smoke-test" groups={selection.deployables} onSelect={onSelect} />
+          {node.type === "package" && selection.producedByProject ? (
+            <button
+              className="package-producer-card"
+              type="button"
+              title="Open the project that produces this internal NuGet package"
+              onClick={() => onSelect(selection.producedByProject!.id)}
+            >
+              <span>
+                <strong>Internal package</strong>
+                <small>This package is built by <DottedName value={selection.producedByProject.name} /></small>
+              </span>
+              <span className="package-producer-action">Open producer</span>
+            </button>
+          ) : null}
+
+          <NodeLabels node={node} producedByName={selection.producedByProject?.name} />
+        </div>
+        {selection.repoProjects ? <RepoProjectList selectedId={node.id} projects={selection.repoProjects} onSelect={onSelect} onHoverPath={onHoverPath} /> : null}
+        <ProjectImpactSummary title="Affected tests" empty="No affected test projects" groups={selection.tests} selectedId={node.id} onSelect={onSelect} onHoverPath={onHoverPath} />
+        <ProjectImpactSummary title="Deployables" empty="No affected web or service projects" groups={selection.deployables} selectedId={node.id} onSelect={onSelect} onHoverPath={onHoverPath} />
+        <ConsumerList selectedId={node.id} groups={selection.consumers} onSelect={onSelect} onHoverPath={onHoverPath} />
+        <InternalDependencyList selectedId={node.id} groups={selection.internalDependencies} onSelect={onSelect} onHoverPath={onHoverPath} />
+        {showExternal ? <ExternalDependencyList selectedId={node.id} dependencies={selection.externalDependencies} onSelect={onSelect} onHoverPath={onHoverPath} /> : null}
       </div>
     </div>
   );
 }
 
-function DependencySummary({ count }: { count: number }) {
+function RepoProjectList({ selectedId, projects, onSelect, onHoverPath }: { selectedId: string; projects: ProjectNode[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
   return (
-    <section className="popover-section dependency-summary" title="Dependencies are projects or packages this selection uses.">
-      <h3>Dependencies used</h3>
-      <p className="muted">
-        {count === 0
-          ? "No local dependencies found."
-          : `Uses ${count} local ${count === 1 ? "dependency" : "dependencies"}.`}
-      </p>
+    <section className="popover-section">
+      <SectionTitle title="Projects" count={projects.length} />
+      {projects.length === 0 ? (
+        <p className="muted">None</p>
+      ) : (
+        <div className="link-group">
+          <ul className="impact-items">
+            {projects.map((project) => (
+              <li key={project.id}>
+                <button
+                  className="impact-link"
+                  type="button"
+                  title="Open this project"
+                  onClick={() => onSelect(project.id)}
+                  onMouseEnter={() => onHoverPath([[selectedId, project.id]])}
+                  onFocus={() => onHoverPath([[selectedId, project.id]])}
+                  onBlur={() => onHoverPath(null)}
+                >
+                  <span className="impact-link-main">
+                    <span className="link-name"><DottedName value={project.name} /></span>
+                  </span>
+                  <ProjectKindLabels kinds={project.kinds} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
 
-function ImpactList({
-  title,
+function ProjectImpactSummary({ title, empty, groups, selectedId, onSelect, onHoverPath }: { title: string; empty: string; groups: ProjectGroup[]; selectedId: string; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+  const impacts = flattenGroups(groups);
+  return (
+    <section className="popover-section">
+      <SectionTitle title={title} count={impacts.length} />
+      {impacts.length === 0 ? (
+        <p className="muted">{empty}</p>
+      ) : (
+        <ProjectImpactGroups label="Projects" groups={groups} selectedId={selectedId} onSelect={onSelect} onHoverPath={onHoverPath} />
+      )}
+    </section>
+  );
+}
+
+function NodeLabels({ node, producedByName }: { node: AnyGraphNode; producedByName?: string }) {
+  const labels = nodeLabels(node, producedByName);
+  if (labels.length === 0) return null;
+
+  return <div className="node-labels">{labels.map((label) => <span key={label} className="node-label">{label}</span>)}</div>;
+}
+
+function ConsumerList({
+  selectedId,
   groups,
   onSelect,
+  onHoverPath,
 }: {
-  title: string;
+  selectedId: string;
   groups: ProjectGroup[];
   onSelect(id: string): void;
+  onHoverPath(pathIds: string[][] | null): void;
 }) {
   const impacts = flattenGroups(groups);
-  const directGroups = groupsForDepth(groups, "direct");
-  const transitiveGroups = groupsForDepth(groups, "transitive");
+  const directGroups = splitProjectGroups(groups, (impact) => impact.depth <= 1);
+  const indirectGroups = splitProjectGroups(groups, (impact) => impact.depth > 1);
 
   return (
     <section className="popover-section">
-      <h3>{title}</h3>
+      <SectionTitle title="Consumers" count={impacts.length} />
       {impacts.length === 0 ? (
         <p className="muted">None</p>
       ) : (
         <>
-          <ImpactDepth title="Direct consumers" help="Projects that reference this selection directly." groups={directGroups} onSelect={onSelect} />
-          <ImpactDepth title="Transitive consumers" help="Projects affected through another project or package." groups={transitiveGroups} onSelect={onSelect} />
+          <ProjectImpactGroups label="Direct consumers" groups={directGroups} selectedId={selectedId} onSelect={onSelect} onHoverPath={onHoverPath} />
+          <ProjectImpactGroups label="Indirect consumers" groups={indirectGroups} selectedId={selectedId} onSelect={onSelect} onHoverPath={onHoverPath} />
         </>
       )}
     </section>
   );
 }
 
-function ImpactDepth({ title, help, groups, onSelect }: { title: string; help: string; groups: ProjectGroup[]; onSelect(id: string): void }) {
-  if (groups.length === 0) return null;
+function InternalDependencyList({ selectedId, groups, onSelect, onHoverPath }: { selectedId: string; groups: DependencyGroup[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+  const dependencies = groups.flatMap((group) => group.dependencies);
+  return (
+    <section className="popover-section">
+      <SectionTitle title="Internal dependencies" count={dependencies.length} />
+      {dependencies.length === 0 ? (
+        <p className="muted">None</p>
+      ) : (
+        <DependencyGroups groups={groups} selectedId={selectedId} onSelect={onSelect} onHoverPath={onHoverPath} />
+      )}
+    </section>
+  );
+}
+
+function ExternalDependencyList({ selectedId, dependencies, onSelect, onHoverPath }: { selectedId: string; dependencies: DependencyItem[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+  return (
+    <section className="popover-section">
+      <SectionTitle title="External packages" count={dependencies.length} />
+      {dependencies.length === 0 ? (
+        <p className="muted">None</p>
+      ) : (
+        <DependencyRows selectedId={selectedId} dependencies={dependencies} onSelect={onSelect} onHoverPath={onHoverPath} />
+      )}
+    </section>
+  );
+}
+
+function ProjectImpactGroups({ label, groups, selectedId, onSelect, onHoverPath }: { label: string; groups: ProjectGroup[]; selectedId: string; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+  const impacts = flattenGroups(groups);
+  if (impacts.length === 0) return null;
 
   return (
-    <div className="impact-depth">
-      <div className="impact-depth-title" title={help}>{title}</div>
-      {groups.map((group) => (
-        <div key={group.repoName} className="impact-group">
-          <div className="impact-title" title="Repository containing these affected projects">{group.repoName}</div>
-          <ul className="impact-items">
-            {group.projects.map((impact) => (
-              <li key={impact.project.id}>
-                <button className="impact-link" type="button" title={impactHelp(impact)} onClick={() => onSelect(impact.project.id)}>
-                  <span className="impact-link-main">
-                    <span>{impact.project.name}</span>
-                    {impact.hasAlternativeRoute ? <span className="route-note">multiple routes</span> : null}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+    <div className="relationship-block">
+      <div className="relationship-label">{label}</div>
+      <div className="link-groups">
+        {groups.map((group) => (
+          <div key={group.repoName} className="link-group">
+            <div className="impact-title" title="Repository containing these affected projects">{group.repoName}</div>
+            <ul className="impact-items">
+              {group.projects.map((impact) => (
+                <li key={impact.project.id}>
+                  <button
+                    className="impact-link"
+                    type="button"
+                    title={impactHelp(impact)}
+                    onClick={() => onSelect(impact.project.id)}
+                    onMouseEnter={() => onHoverPath(pathIdsFor(impact.paths, impact.project.id, selectedId))}
+                    onFocus={() => onHoverPath(pathIdsFor(impact.paths, impact.project.id, selectedId))}
+                    onBlur={() => onHoverPath(null)}
+                  >
+                    <span className="impact-link-main">
+                      <span className="link-name"><DottedName value={impact.project.name} /></span>
+                      <RouteBadge depth={impact.depth} hasAlternativeRoute={impact.hasAlternativeRoute} />
+                    </span>
+                    <ProjectKindLabels kinds={impact.project.kinds} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </div>
+  );
+}
+
+function DependencyGroups({ groups, selectedId, onSelect, onHoverPath }: { groups: DependencyGroup[]; selectedId: string; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+  const dependencies = groups.flatMap((group) => group.dependencies);
+  if (dependencies.length === 0) return null;
+
+  return (
+    <div className="relationship-block">
+      <div className="link-groups">
+        {groups.map((group) => (
+          <div key={group.repoName} className="link-group">
+            <div className="impact-title" title="Repository containing these dependencies">{group.repoName}</div>
+            <DependencyRows selectedId={selectedId} dependencies={group.dependencies} onSelect={onSelect} onHoverPath={onHoverPath} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DependencyRows({ selectedId, dependencies, onSelect, onHoverPath }: { selectedId: string; dependencies: DependencyItem[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+  return (
+    <ul className="impact-items">
+      {dependencies.map((dependency) => (
+        <li key={dependency.node.id}>
+          <button
+            className="impact-link"
+            type="button"
+            title={dependencyHelp(dependency)}
+            onClick={() => onSelect(dependency.node.id)}
+            onMouseEnter={() => onHoverPath(pathIdsFor(dependency.paths, dependency.node.id, selectedId))}
+            onFocus={() => onHoverPath(pathIdsFor(dependency.paths, dependency.node.id, selectedId))}
+            onBlur={() => onHoverPath(null)}
+          >
+            <span className="impact-link-main">
+              <span className="link-name"><DottedName value={dependency.node.name} /></span>
+              <RouteBadge depth={dependency.depth} hasAlternativeRoute={dependency.hasAlternativeRoute} />
+            </span>
+            <span className="link-meta">
+              {dependency.node.type === "project" ? <ProjectKindLabels kinds={dependency.node.kinds} /> : packageLabel(dependency.node)}
+              <ReferenceVersionLabels versions={dependency.referenceVersions} />
+              {dependency.node.type === "package" ? <PackageVersionLabels versions={dependency.node.versions} /> : null}
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SectionTitle({ title, count }: { title: string; count: number }) {
+  return (
+    <div className="section-title-row">
+      <h3>{title}</h3>
+      <span className="section-count">{count}</span>
+    </div>
+  );
+}
+
+function RouteBadge({ depth, hasAlternativeRoute }: { depth: number; hasAlternativeRoute: boolean }) {
+  const route = depth <= 1 && hasAlternativeRoute ? "dual" : depth <= 1 ? "direct" : "indirect";
+  const help = route === "dual"
+    ? "Direct, and also reachable through another route. Retesting should consider both paths."
+    : route === "direct"
+      ? "Direct reference from the selected node or repo."
+      : "Reached through another project or package dependency.";
+  return <span className={`route-badge ${route} has-tooltip`} data-tooltip={help}>{route === "dual" ? "dual source" : route}</span>;
+}
+
+function ProjectKindLabels({ kinds }: { kinds?: ProjectKind[] }) {
+  return (
+    <span className="kind-labels">
+      {effectiveProjectKinds(kinds).map((kind) => (
+        <span key={kind} className={`node-label ${KIND_CLASS[kind]}`} title={KIND_LABELS[kind]}>{KIND_SHORT[kind]}</span>
+      ))}
+    </span>
   );
 }
 
@@ -144,13 +292,19 @@ function flattenGroups(groups: ProjectGroup[]): ImpactProject[] {
   return groups.flatMap((group) => group.projects);
 }
 
-function groupsForDepth(groups: ProjectGroup[], depth: "direct" | "transitive"): ProjectGroup[] {
+function splitProjectGroups(groups: ProjectGroup[], predicate: (impact: ImpactProject) => boolean): ProjectGroup[] {
   return groups
-    .map((group) => ({
-      repoName: group.repoName,
-      projects: group.projects.filter((impact) => (depth === "direct" ? impact.depth <= 1 : impact.depth > 1)),
-    }))
+    .map((group) => ({ ...group, projects: group.projects.filter(predicate) }))
     .filter((group) => group.projects.length > 0);
+}
+
+function pathIdsFor(paths: AnyGraphNode[][], fallbackId: string, selectedId: string): string[][] {
+  const pathIds = paths.map((path) => path.map((node) => node.id).filter(Boolean));
+  const anchoredPaths = pathIds.length > 0 ? pathIds : [[fallbackId]];
+  return anchoredPaths.map((ids) => {
+    const anchoredIds = ids.length > 0 ? ids : [fallbackId];
+    return anchoredIds.includes(selectedId) ? anchoredIds : [selectedId, ...anchoredIds];
+  });
 }
 
 function impactHelp(impact: ImpactProject): string {
@@ -163,25 +317,84 @@ function impactHelp(impact: ImpactProject): string {
     : base;
 }
 
-function detailHelp(label: string): string {
-  switch (label) {
-    case "Type":
-      return "Graph node type: project, package, repo, or solution.";
-    case "SDK":
-      return ".NET SDK declared by the project file.";
-    case "Kinds":
-      return "Local classification inferred from project metadata.";
-    case "TFMs":
-      return "Target Framework Monikers built by this project.";
-    case "Package ID":
-      return "NuGet package ID produced by this project, when packable.";
-    case "Classification":
-      return "Whether a package was resolved as internal, external, or unknown from local data.";
-    case "Versions":
-      return "Package versions seen in local project references or restore data.";
-    case "Produced by":
-      return "Local project that produces this internal package.";
-    default:
-      return label;
+function dependencyHelp(dependency: DependencyItem): string {
+  const route = dependency.depth <= 1 ? "Referenced directly by this selection." : "Reached through another project or package.";
+  const versions = dependency.referenceVersions?.length ? ` Referenced version: ${dependency.referenceVersions.join(", ")}.` : "";
+  return dependency.hasAlternativeRoute
+    ? `${route}${versions} Also reachable through another dependency route.`
+    : `${route}${versions}`;
+}
+
+function nodeLabels(node: AnyGraphNode, producedByName?: string): string[] {
+  if (node.type === "project") {
+    return [
+      ...(node.sdk ? [node.sdk] : []),
+      ...((node.tfms || []).length > 0 ? [node.tfms!.join(", ")] : []),
+      ...(node.packageId ? [`package ${node.packageId}`] : []),
+    ];
   }
+
+  if (node.type === "package") {
+    return [
+      node.classification || "unknown",
+      ...((node.versions || []).length > 0 ? [`versions ${node.versions!.join(", ")}`] : ["version unknown"]),
+      ...((node.versions || []).length > 1 ? ["version drift"] : []),
+      ...(producedByName ? [`produced by ${producedByName}`] : []),
+    ];
+  }
+
+  if (node.type === "solution") return ["solution"];
+  return [];
+}
+
+function packageLabel(node: AnyGraphNode) {
+  if (node.type !== "package") return null;
+  return <span className="node-label">{node.classification || "unknown"}</span>;
+}
+
+function PackageVersionLabels({ versions }: { versions?: string[] }) {
+  if (!versions || versions.length === 0) return <span className="node-label">version unknown</span>;
+
+  return (
+    <>
+      <span className="node-label">v {versions.join(", ")}</span>
+      {versions.length > 1 ? <span className="node-label version-drift">version drift</span> : null}
+    </>
+  );
+}
+
+function ReferenceVersionLabels({ versions }: { versions?: string[] }) {
+  if (!versions || versions.length === 0) return null;
+
+  return (
+    <>
+      {versions.map((version) => (
+        <span key={version} className={`node-label version-${versionKind(version)}`}>ref {versionKind(version)} {version}</span>
+      ))}
+    </>
+  );
+}
+
+function versionKind(version: string): "exact" | "range" | "floating" {
+  const trimmed = version.trim();
+  if (trimmed.includes("*") || /(^|[.-])[xX]($|[.-])/.test(trimmed)) return "floating";
+  if (/^[[(].*[\])]$/.test(trimmed) || trimmed.includes(",")) return "range";
+  return "exact";
+}
+
+function DottedName({ value }: { value: string }) {
+  const parts = value.split(".");
+  if (parts.length === 1) return <>{value}</>;
+
+  return (
+    <>
+      {parts.map((part, index) => (
+        <span key={`${part}-${index}`}>
+          {index > 0 ? "." : ""}
+          {part}
+          {index < parts.length - 1 ? <wbr /> : null}
+        </span>
+      ))}
+    </>
+  );
 }

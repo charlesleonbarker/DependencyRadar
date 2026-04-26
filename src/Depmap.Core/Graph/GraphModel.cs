@@ -13,7 +13,6 @@ internal enum EdgeKind
     SolutionContains,
     ProjectRef,
     PackageRef,
-    PackageRefTransitive,
     ProducedBy,
 }
 
@@ -60,7 +59,7 @@ internal sealed record PackageNode(
     string? ProducedByProjectId,
     IReadOnlyList<string> Versions);
 
-internal sealed record Edge(string From, string To, EdgeKind Kind);
+internal sealed record Edge(string From, string To, EdgeKind Kind, string? Version = null);
 
 internal sealed class Graph
 {

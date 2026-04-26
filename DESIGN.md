@@ -61,6 +61,7 @@ The source folders retain their original `Depmap.*` names for now. Namespaces, a
 - Keep the latest graph JSON and summary in memory.
 - Expose scan state and graph data over HTTP.
 - Emit SSE updates when the graph version changes.
+- Optionally emit display-only shortened paths by removing configured `DisplayPathPrefixes`.
 
 Current API:
 
@@ -68,6 +69,8 @@ Current API:
 - `GET /api/graph`
 - `POST /api/rescan`
 - `GET /api/updates`
+
+The frontend should rely on watcher-driven scans for normal use. `POST /api/rescan` remains useful for diagnostics and development, but it is not a primary UI workflow.
 
 ## Frontend responsibilities
 
@@ -77,6 +80,7 @@ Current API:
 - Render the graph with Cytoscape
 - Maintain search, filters, layout, focus, and selection state
 - Compute blast radius, affected tests, and deployables client-side
+- Surface direct vs indirect consumers/dependencies and package version drift from the local graph data.
 
 `DependencyRadar.Web` should stay thin on domain logic. Graph semantics remain owned by the shared model and API contract.
 
@@ -91,25 +95,28 @@ Current API:
 | Project   | `.csproj` absolute path | name, assembly name, SDK, TFMs, classification, package ID if packable |
 | Package   | package ID              | versions seen, classification, produced-by project if internal         |
 
+Repo, solution, and project JSON may include `displayPath` alongside the raw `path`. `displayPath` is presentation-only and must not be used for graph identity or file IO.
+
 ### Project classification
 
 Derived locally from `.csproj` content:
 
-- `test`
-- `web`
-- `blazor`
-- `service`
-- `nuget-producing`
-- `library`
+- base `Microsoft.NET.Sdk` projects
+- test projects
+- `Microsoft.NET.Sdk.Web` projects
+- Blazor WebAssembly projects
+- Worker SDK or hosted-service projects
+- packable NuGet projects
 
 A project can hold multiple classifications.
+
+The JSON classification keys remain compact and stable (`library`, `test`, `web`, `blazor`, `service`, `nuget-producing`), but the UI should use .NET SDK/project-type labels rather than generic labels such as "library" or "service".
 
 ### Edges
 
 - `Solution -> Project` (`solutionContains`)
 - `Project -> Project` (`projectRef`)
 - `Project -> Package` (`packageRef`)
-- `Project -> Package` (`packageRefTransitive`)
 - `Package -> Project` (`producedBy`)
 
 The `producedBy` edge is the critical edge that closes the internal NuGet loop.
@@ -136,9 +143,6 @@ The `producedBy` edge is the critical edge that closes the internal NuGet loop.
 - `.csproj`
   XML parse metadata, `ProjectReference`, `PackageReference`, packability, and classification hints.
 
-- `project.assets.json`
-  Best-effort read for transitive package references when present.
-
 - Git repo detection
   Walk ancestors looking for `.git`.
 
@@ -156,9 +160,15 @@ Selecting a node should:
 
 - highlight upstream blast radius
 - highlight downstream dependencies
-- show node details
-- list affected tests grouped by repo
-- list affected deployables grouped by repo
+- show compact, recognisable labels for the selected node instead of a bulky details table
+- list consumers grouped by repo
+- list internal dependencies grouped by repo
+- list external or unknown package dependencies at the bottom only when the package filter is enabled
+- label relationships consistently as `direct`, `indirect`, or `dual source`
+- show direct and indirect sections separately where that improves scanability
+- highlight packages where more than one local version is seen
+
+Internal NuGet package dependencies should be presented as the producer project when the package can be resolved locally. For sidebar depth, path labels, and hover paths, treat the internal package and its producing project as the same dependency target; do not show an extra "via package" hop or make the package and producer look like duplicate primary dependencies. Keep the referenced package version visible where the direct package-reference edge provides it.
 
 ## Storage
 

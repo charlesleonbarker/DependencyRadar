@@ -6,11 +6,12 @@ namespace DependencyRadar.Scanning;
 
 public sealed record ScanRequest(
     IReadOnlyList<string> Roots,
-    bool IncludeTransitive,
     IReadOnlyList<string> IgnoreGlobs)
 {
-    public ScanRequest(string root, bool includeTransitive, IReadOnlyList<string> ignoreGlobs)
-        : this(new[] { root }, includeTransitive, ignoreGlobs)
+    public IReadOnlyList<string> DisplayPathPrefixes { get; init; } = Array.Empty<string>();
+
+    public ScanRequest(string root, IReadOnlyList<string> ignoreGlobs)
+        : this(new[] { root }, ignoreGlobs)
     {
     }
 }
@@ -43,6 +44,11 @@ public sealed class DependencyRadarScanner
             .Select(Path.GetFullPath)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        var displayPathPrefixes = request.DisplayPathPrefixes
+            .Where(static prefix => !string.IsNullOrWhiteSpace(prefix))
+            .Select(Path.GetFullPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
         foreach (var root in normalizedRoots)
         {
@@ -65,13 +71,6 @@ public sealed class DependencyRadarScanner
 
         log($"  found {totalSolutions} solution(s), {discoveredProjects.Count} project(s)");
 
-        if (request.IncludeTransitive)
-        {
-            log("reading project.assets.json where available...");
-            var transitiveCount = builder.AddTransitiveFromAssetsFiles(discoveredProjects);
-            log($"  added {transitiveCount} transitive package edge(s)");
-        }
-
         var graph = builder.Build(RenderRootsLabel(normalizedRoots));
         var summary = new GraphSummary(
             graph.Repos.Count,
@@ -85,7 +84,7 @@ public sealed class DependencyRadarScanner
         return new ScanSnapshot(
             normalizedRoots,
             graph.ScannedAt,
-            GraphJsonWriter.Serialize(graph, indentJson),
+            GraphJsonWriter.Serialize(graph, indentJson, displayPathPrefixes),
             summary);
     }
 

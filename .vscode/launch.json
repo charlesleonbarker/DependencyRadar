@@ -32,7 +32,10 @@
   "compounds": [
     {
       "name": "Dependency Radar: Full Stack",
-      "configurations": ["Dependency Radar: Backend (.NET)", "Dependency Radar: Web (Chrome)"],
+      "configurations": [
+        "Dependency Radar: Backend (.NET)",
+        "Dependency Radar: Web (Chrome)"
+      ],
       "stopAll": true
     }
   ]

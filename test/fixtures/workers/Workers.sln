@@ -1,6 +1,0 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Billing.Worker", "src\Billing.Worker\Billing.Worker.csproj", "{DDDDDDDD-0004-0004-0004-000000000001}"
-EndProject
-Global
-EndGlobal

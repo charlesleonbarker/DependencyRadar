@@ -7,6 +7,7 @@ export type LayoutId = "dagre" | "fcose" | "concentric";
 
 export interface FilterState {
   kindFilters: Record<ProjectKind, boolean>;
+  repoFilters: Record<string, boolean>;
   showExternal: boolean;
 }
 
@@ -31,6 +32,8 @@ export function buildElements(graph: DepmapGraph, groupByRepo: boolean): cytosca
         id: project.id,
         label: project.name,
         type: "project",
+        baseWidth: 48,
+        baseHeight: 32,
         kinds: kinds.join(" "),
         parent: groupByRepo ? project.repo : undefined,
       },
@@ -42,7 +45,7 @@ export function buildElements(graph: DepmapGraph, groupByRepo: boolean): cytosca
     if (collapsedPackages.has(pkg.id)) return;
 
     elements.push({
-      data: { id: pkg.id, label: pkg.name, type: "package", classification: pkg.classification || "unknown" },
+      data: { id: pkg.id, label: pkg.name, type: "package", baseWidth: 30, baseHeight: 30, classification: pkg.classification || "unknown" },
       classes: `n-package pkg-${pkg.classification || "unknown"}`,
     });
   });
@@ -54,30 +57,69 @@ export function buildElements(graph: DepmapGraph, groupByRepo: boolean): cytosca
     const target = collapsedPackages.get(edge.to) || edge.to;
     if (source === target) return;
 
-    elements.push({ data: { id: `e${index}`, source, target, kind: edge.kind }, classes: `e-${edge.kind}` });
+    elements.push({ data: { id: `e${index}`, source, target, kind: edge.kind, version: edge.version }, classes: `e-${edge.kind}` });
   });
 
   return elements;
 }
 
+export function applyNodeScale(cy: cytoscape.Core | null, scale: number): void {
+  if (!cy) return;
+
+  cy.batch(() => {
+    cy.nodes(":not(.n-repo)").forEach((node) => {
+      const baseWidth = Number(node.data("baseWidth")) || 30;
+      const baseHeight = Number(node.data("baseHeight")) || 30;
+      node.style({
+        width: baseWidth * scale,
+        height: baseHeight * scale,
+      });
+    });
+  });
+}
+
 export function runLayout(cy: cytoscape.Core | null, layout: LayoutId): void {
   if (!cy) return;
 
-  const eles = cy.elements().not(".is-filtered");
+  // Restore any nodes that were moved outside their compound parent for the selection
+  // visual. Layout algorithms require a clean compound graph; applySelection re-applies
+  // the visual state immediately after this call in every callsite.
+  cy.nodes().forEach((node) => {
+    const savedParent = node.data("_sp") as string | undefined;
+    if (savedParent) {
+      node.move({ parent: savedParent });
+      node.removeData("_sp");
+    }
+  });
+
+  const allVisible = cy.elements().not(".is-filtered");
+
+  // Ensure every edge in the layout set has both endpoints present — dagre throws
+  // "g.node(...) is undefined" on large compound graphs when this invariant breaks.
+  const visibleNodeIds = new Set(allVisible.nodes().map((n) => n.id()));
+  const eles = allVisible.filter((ele) => {
+    if (!ele.isEdge()) return true;
+    return visibleNodeIds.has(ele.source().id()) && visibleNodeIds.has(ele.target().id());
+  });
+
   const config: cytoscape.LayoutOptions =
     layout === "fcose"
       ? ({ name: "fcose", eles, animate: false, nodeRepulsion: 6800, idealEdgeLength: 142, packComponents: true, gravity: 0.14, fit: true, padding: 64 } as cytoscape.LayoutOptions)
       : layout === "concentric"
         ? ({ name: "concentric", eles, animate: false, fit: true, padding: 64, minNodeSpacing: 42, concentric: (node: cytoscape.NodeSingular) => node.indegree(false), levelWidth: () => 1 } as cytoscape.LayoutOptions)
-      : ({ name: "dagre", eles, rankDir: "LR", ranker: "network-simplex", nodeSep: 46, rankSep: 132, edgeSep: 36, nodeDimensionsIncludeLabels: true, fit: true, padding: 64 } as cytoscape.LayoutOptions);
+      : ({ name: "dagre", eles, rankDir: "LR", ranker: "tight-tree", nodeSep: 46, rankSep: 132, edgeSep: 36, nodeDimensionsIncludeLabels: false, fit: true, padding: 64 } as cytoscape.LayoutOptions);
 
-  cy.layout(config).run();
+  try {
+    cy.layout(config).run();
+  } catch {
+    cy.fit();
+  }
 }
 
 export function applyVisibility(cy: cytoscape.Core | null, filterState: FilterState): void {
   if (!cy) return;
 
-  const { kindFilters, showExternal } = filterState;
+  const { kindFilters, repoFilters, showExternal } = filterState;
 
   cy.batch(() => {
     cy.nodes().forEach((node) => {
@@ -88,13 +130,25 @@ export function applyVisibility(cy: cytoscape.Core | null, filterState: FilterSt
 
       if (type === "project") {
         const kinds = String(node.data("kinds") || "").split(/\s+/).filter(Boolean) as ProjectKind[];
-        visible = effectiveProjectKinds(kinds).some((kind) => kindFilters[kind] !== false);
+        const repoId = String(node.data("parent") || "");
+        visible = repoFilters[repoId] !== false && effectiveProjectKinds(kinds).some((kind) => kindFilters[kind] !== false);
       } else if (type === "package") {
         const classification = node.data("classification");
         if ((classification === "external" || classification === "unknown") && !showExternal) visible = false;
       }
 
       node.toggleClass("is-filtered", !visible);
+    });
+
+    cy.nodes(".n-package").forEach((node) => {
+      if (node.hasClass("is-filtered")) return;
+
+      const visibleProjectLinks = node
+        .connectedEdges()
+        .connectedNodes()
+        .filter((other) => other.id() !== node.id() && other.data("type") === "project" && !other.hasClass("is-filtered"));
+
+      node.toggleClass("is-filtered", visibleProjectLinks.empty());
     });
 
     cy.edges().forEach((edge) => {
@@ -109,8 +163,26 @@ export function applyVisibility(cy: cytoscape.Core | null, filterState: FilterSt
   });
 }
 
+export function fitGraph(cy: cytoscape.Core | null, leftInset = 0): void {
+  if (!cy) return;
+
+  const visibleNodes = cy.nodes().not(".is-filtered, .n-repo");
+  if (visibleNodes.nonempty()) {
+    fitElementsInAvailableViewport(cy, visibleNodes, leftInset);
+  }
+}
+
 export function applySelection(cy: cytoscape.Core | null, model: GraphModel | null, selectionId: string | null): void {
   if (!cy) return;
+
+  // Restore nodes that were temporarily removed from their compound parent
+  cy.nodes().forEach((node) => {
+    const savedParent = node.data("_sp") as string | undefined;
+    if (savedParent) {
+      node.move({ parent: savedParent });
+      node.removeData("_sp");
+    }
+  });
 
   cy.elements().removeClass("dim hilite ancestor descendant");
   cy.elements().unselect();
@@ -119,10 +191,14 @@ export function applySelection(cy: cytoscape.Core | null, model: GraphModel | nu
   const ancestors = model.reverseReach(selectionId);
   const descendants = model.forwardReach(selectionId);
   const graphSelectionId = model.graphIdForSelection(selectionId);
-  const linked = new Set([selectionId, graphSelectionId, ...ancestors, ...descendants]);
+  const linked = new Set([selectionId, graphSelectionId, ...model.neighborhood(selectionId), ...ancestors, ...descendants]);
 
   cy.nodes().forEach((node) => {
-    if (node.hasClass("is-filtered") || node.hasClass("n-repo")) return;
+    if (node.hasClass("is-filtered")) return;
+    if (node.hasClass("n-repo")) {
+      if (linked.has(node.id())) node.addClass("hilite");
+      return;
+    }
     node.addClass(linked.has(node.id()) ? "hilite" : "dim");
   });
 
@@ -130,7 +206,7 @@ export function applySelection(cy: cytoscape.Core | null, model: GraphModel | nu
     if (repo.hasClass("is-filtered")) return;
     const visibleChildren = repo.children().not(".is-filtered");
     const allDimmed = visibleChildren.nonempty() && visibleChildren.not(".dim").empty();
-    if (allDimmed) repo.addClass("dim");
+    if (allDimmed && !linked.has(repo.id())) repo.addClass("dim");
   });
 
   cy.edges().forEach((edge) => {
@@ -141,6 +217,69 @@ export function applySelection(cy: cytoscape.Core | null, model: GraphModel | nu
   ancestors.forEach((id) => cy.getElementById(id).addClass("ancestor"));
   descendants.forEach((id) => cy.getElementById(id).addClass("descendant"));
   cy.getElementById(graphSelectionId).select();
+
+  // Move dimmed nodes out of their compound parent so the repo box shrinks
+  // to only enclose the highlighted nodes. Saved parent is restored above on next call.
+  cy.nodes(".dim").forEach((node) => {
+    if (node.hasClass("n-repo")) return;
+    const parentId = node.data("parent") as string | undefined;
+    if (parentId) {
+      node.data("_sp", parentId);
+      node.move({ parent: null });
+    }
+  });
+}
+
+export function applySidebarHover(cy: cytoscape.Core | null, model: GraphModel | null, pathIds: string[][] | null): void {
+  if (!cy) return;
+
+  cy.elements().removeClass("sidebar-focus sidebar-muted");
+  if (!model || !pathIds || pathIds.length === 0) return;
+
+  const graphPaths = pathIds
+    .map((path) => path.map((id) => model.graphIdForSelection(id)).filter((id, index, ids) => id && ids.indexOf(id) === index))
+    .filter((path) => path.length > 0);
+  if (graphPaths.length === 0) return;
+
+  const routeSet = new Set(graphPaths.flat());
+  const routePairs = new Set<string>();
+
+  graphPaths.forEach((graphPathIds) => {
+    graphPathIds.forEach((id) => {
+      const node = cy.getElementById(id);
+      const parent = node.parent();
+      const parentNode = parent[0];
+      if (parentNode) routeSet.add(parentNode.id());
+    });
+
+    const nonRepoPathIds = graphPathIds.filter((id) => {
+      const node = cy.getElementById(id);
+      return node.empty() || !node.hasClass("n-repo");
+    });
+    addRoutePairs(routePairs, graphPathIds);
+    addRoutePairs(routePairs, nonRepoPathIds);
+  });
+
+  cy.nodes().forEach((node) => {
+    if (node.hasClass("is-filtered")) return;
+    node.addClass(routeSet.has(node.id()) ? "sidebar-focus" : "sidebar-muted");
+  });
+
+  cy.edges().forEach((edge) => {
+    if (edge.hasClass("is-filtered")) return;
+    const pair = `${edge.source().id()}->${edge.target().id()}`;
+    const inRoute = routePairs.has(pair);
+    edge.addClass(inRoute ? "sidebar-focus" : "sidebar-muted");
+  });
+}
+
+function addRoutePairs(routePairs: Set<string>, pathIds: string[]): void {
+  for (let index = 0; index < pathIds.length - 1; index += 1) {
+    const source = pathIds[index];
+    const target = pathIds[index + 1];
+    routePairs.add(`${source}->${target}`);
+    routePairs.add(`${target}->${source}`);
+  }
 }
 
 export function fitSelection(cy: cytoscape.Core | null, model: GraphModel | null, selectionId: string | null, leftInset = 0): void {

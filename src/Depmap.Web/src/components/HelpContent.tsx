@@ -5,31 +5,31 @@ import { formatDate } from "../domain/graphModel";
 interface HelpContentProps {
   status: MonitorStatus | null;
   counts: GraphSummary;
-  onRescan(): void;
-  rescanning: boolean;
 }
 
-export function HelpContent({ status, counts, onRescan, rescanning }: HelpContentProps) {
+export function HelpContent({ status, counts }: HelpContentProps) {
   return (
     <>
       <section className="modal-section">
         <h3>What this is</h3>
-        <p className="muted">Dependency Radar walks your configured repo roots and maps every .NET project, package, and solution into a live dependency graph. Select any node to trace its blast radius: which tests to run and which deployables are affected.</p>
+        <p className="muted">Dependency Radar scans configured local repo roots and builds a map from `.csproj`, `ProjectReference`, and `PackageReference` data. Select a project, repo, or package to see what may need retesting or redeploying if that node changes.</p>
       </section>
 
       <section className="modal-section">
         <h3>Using the map</h3>
         <ul className="help-list">
-          <li>Search for any project or package, use arrow keys to choose a result, and press Enter to jump to its affected neighborhood.</li>
-          <li>Selecting a node highlights affected consumers and dependencies, then fits the visible context into the viewport.</li>
-          <li>The inspector opens under search and separates direct and transitive affected projects.</li>
-          <li>Use <strong>Filters</strong> to hide project types or show unresolved package nodes when package-level inspection matters.</li>
+          <li>Search for a repo, project, assembly, or package ID. Arrow keys choose a result; Enter opens its impact view.</li>
+          <li>Consumers are projects that depend on the selected node. These are the candidates for retest after a breaking change.</li>
+          <li>Dependencies are projects or packages used by the selected node. These explain why the selected code may break after an upstream change.</li>
+          <li>Affected tests and deployables are listed as project paths; the app does not generate `dotnet test` commands.</li>
+          <li>Use <strong>Filters</strong> to hide project types or show external/unresolved packages when package-level inspection matters.</li>
           <li>Switch layouts bottom-right: <strong>Dependency Paths</strong> traces direction, <strong>Cluster Map</strong> separates dense areas, and <strong>Most Referenced</strong> centres high-traffic nodes.</li>
         </ul>
       </section>
 
       <section className="modal-section">
         <h3>Reading the graph</h3>
+        <p className="muted">Dependency Radar does not fetch NuGet or GitHub metadata. If a package cannot be resolved from scanned repos, it stays unknown rather than being guessed.</p>
         <div className="key-grid">
           <div className="key-block">
             <div className="key-label">Shapes</div>
@@ -44,7 +44,7 @@ export function HelpContent({ status, counts, onRescan, rescanning }: HelpConten
             <div className="key-item"><span className="swatch swatch-descendant" /><span>Dependencies used by selection</span></div>
           </div>
           <div className="key-block">
-            <div className="key-label">Project types</div>
+            <div className="key-label">.NET project types</div>
             {DEFAULT_KINDS.map((kind) => (
               <div className="key-item" key={kind}>
                 <span className={`shape-chip project-shape ${KIND_CLASS[kind]}`} />
@@ -56,26 +56,24 @@ export function HelpContent({ status, counts, onRescan, rescanning }: HelpConten
             <div className="key-label">Edges</div>
             <div className="key-item edge-key"><span className="edge-swatch edge-project" /><span>Project reference</span></div>
             <div className="key-item edge-key"><span className="edge-swatch edge-package" /><span>Direct package ref</span></div>
-            <div className="key-item edge-key"><span className="edge-swatch edge-transitive" /><span>Indirect (restore data)</span></div>
             <div className="key-item edge-key"><span className="edge-swatch edge-produced" /><span>Produced by project</span></div>
           </div>
         </div>
+        <p className="legend-note"><strong>Produced by project</strong> means an internal package ID is built by a project in the scanned repos. That edge connects package consumers back to source, so a change in the producer can highlight projects that consume the internal NuGet package.</p>
       </section>
 
       <section className="modal-section">
         <h3>Monitor</h3>
-        <div className="monitor-state"><span className={`status-chip ${status?.state || "idle"}`}>{status?.state || "idle"}</span></div>
-        <div className="stats-grid">
-          <Stat label="Repos" value={counts.repoCount || 0} />
-          <Stat label="Projects" value={counts.projectCount || 0} />
-          <Stat label="Packages" value={counts.packageCount || 0} />
-          <Stat label="Edges" value={counts.edgeCount || 0} />
+        <div className="monitor-line">
+          <span className={`status-chip ${status?.state || "idle"}`}>{status?.state || "idle"}</span>
+          <MonitorStat label="Repos" value={counts.repoCount || 0} />
+          <MonitorStat label="Projects" value={counts.projectCount || 0} />
+          <MonitorStat label="Packages" value={counts.packageCount || 0} />
+          <MonitorStat label="Edges" value={counts.edgeCount || 0} />
+          <span className="monitor-scan">Last scan: {formatDate(status?.lastScanAt)}</span>
         </div>
-        <p className="muted">Last scan: {formatDate(status?.lastScanAt)}</p>
+        <p className="legend-note">The backend watches configured roots and rescans automatically after file changes. `POST /api/rescan` remains available for development and diagnostics.</p>
         {status?.lastError ? <p className="monitor-error">{status.lastError}</p> : null}
-        <button className="button" type="button" onClick={onRescan} disabled={rescanning}>
-          {rescanning ? "Rescanning…" : "Rescan now"}
-        </button>
       </section>
 
       <section className="modal-section">
@@ -98,12 +96,12 @@ export function HelpContent({ status, counts, onRescan, rescanning }: HelpConten
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function MonitorStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="stat-card">
-      <span className="stat-label">{label}</span>
-      <span className="stat-value">{value}</span>
-    </div>
+    <span className="monitor-stat">
+      <span className="monitor-stat-value">{value}</span>
+      <span className="monitor-stat-label">{label}</span>
+    </span>
   );
 }
 

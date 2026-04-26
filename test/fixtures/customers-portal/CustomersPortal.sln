@@ -1,8 +1,0 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Customers.Web", "src\Customers.Web\Customers.Web.csproj", "{CCCCCCCC-0003-0003-0003-000000000001}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Customers.Web.Tests", "tests\Customers.Web.Tests\Customers.Web.Tests.csproj", "{CCCCCCCC-0003-0003-0003-000000000002}"
-EndProject
-Global
-EndGlobal

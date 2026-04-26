@@ -4,18 +4,20 @@ export type ProjectKind = "library" | "test" | "web" | "blazor" | "service" | "n
 
 export type PackageClassification = "internal" | "external" | "unknown" | string;
 
-export type EdgeKind = "solutionContains" | "projectRef" | "packageRef" | "packageRefTransitive" | "producedBy";
+export type EdgeKind = "solutionContains" | "projectRef" | "packageRef" | "producedBy";
 
 export interface RepoNode {
   id: string;
   name: string;
   path: string;
+  displayPath?: string;
 }
 
 export interface SolutionNode {
   id: string;
   name: string;
   path: string;
+  displayPath?: string;
   repo?: string;
 }
 
@@ -23,6 +25,7 @@ export interface ProjectNode {
   id: string;
   name: string;
   path: string;
+  displayPath?: string;
   repo?: string;
   sdk?: string;
   tfms?: string[];
@@ -42,9 +45,12 @@ export interface GraphEdge {
   from: string;
   to: string;
   kind: EdgeKind;
+  version?: string;
 }
 
 export interface DepmapGraph {
+  root?: string;
+  displayRoot?: string;
   repos: RepoNode[];
   solutions: SolutionNode[];
   projects: ProjectNode[];

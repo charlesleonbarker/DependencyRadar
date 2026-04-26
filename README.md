@@ -48,7 +48,9 @@ API surface:
 - `POST /api/rescan`
 - `GET /api/updates`
 
-The backend is API-only. It does not host the frontend.
+The backend is API-only. It does not host the frontend. `POST /api/rescan` is primarily for diagnostics and development; normal refreshes come from file-watcher-driven rescans.
+
+If local absolute paths are too noisy in the UI, configure `DependencyRadar:DisplayPathPrefixes`. The API will keep raw paths and stable IDs intact while also returning shortened `displayPath` values for presentation.
 
 ## Frontend
 
@@ -132,6 +134,8 @@ test/fixtures/          synthetic multi-repo fixture estate
 
 - Multi-targeted projects are represented as a single node; dependency edges are the union across TFMs.
 - Packages whose producer cannot be resolved locally remain `unknown`.
+- Internal packages use a `producedBy` edge from package ID to the scanned project that builds it. This closes the internal NuGet loop for impact analysis.
+- Package-reference edges include the locally observed version string when available, allowing the UI to surface version drift.
 - The tool never calls nuget.org or any external metadata service.
 
 ## License

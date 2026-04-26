@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using DependencyRadar.Parsing;
 
 namespace DependencyRadar.Graph;
@@ -126,7 +125,7 @@ internal sealed class GraphBuilder
                 if (pkgRef.Version is { } v) entry.Versions.Add(v);
                 _packages[pkgId] = entry;
 
-                _edges.Add(new Edge(projId, pkgId, EdgeKind.PackageRef));
+                _edges.Add(new Edge(projId, pkgId, EdgeKind.PackageRef, pkgRef.Version));
             }
         }
 
@@ -144,66 +143,6 @@ internal sealed class GraphBuilder
                     _edges.Add(new Edge(fromId, toId, EdgeKind.ProjectRef));
             }
         }
-    }
-
-    /// <summary>
-    /// Best-effort transitive NuGet deps from obj/project.assets.json.
-    /// Returns the number of transitive edges added.
-    /// </summary>
-    public int AddTransitiveFromAssetsFiles(IReadOnlyList<ParsedProject> projects)
-    {
-        var added = 0;
-        foreach (var proj in projects)
-        {
-            var projDir = Path.GetDirectoryName(proj.Path)!;
-            var assetsPath = Path.Combine(projDir, "obj", "project.assets.json");
-            if (!File.Exists(assetsPath)) continue;
-
-            try
-            {
-                using var stream = File.OpenRead(assetsPath);
-                using var doc = JsonDocument.Parse(stream);
-                if (!doc.RootElement.TryGetProperty("targets", out var targets)) continue;
-
-                var directIds = new HashSet<string>(
-                    proj.PackageReferences.Select(p => p.Id),
-                    StringComparer.OrdinalIgnoreCase);
-
-                var fromProjId = IdFor("proj", proj.Path);
-
-                foreach (var target in targets.EnumerateObject())
-                {
-                    foreach (var lib in target.Value.EnumerateObject())
-                    {
-                        // Keys look like "PackageName/1.2.3". Type can be "package", "project", etc.
-                        var typed = lib.Value;
-                        if (!typed.TryGetProperty("type", out var typeEl)) continue;
-                        if (!typeEl.GetString()!.Equals("package", StringComparison.OrdinalIgnoreCase)) continue;
-
-                        var keyParts = lib.Name.Split('/', 2);
-                        var pkgName = keyParts[0];
-                        if (directIds.Contains(pkgName)) continue; // already a direct edge
-
-                        var pkgId = IdFor("pkg", pkgName);
-                        if (!_packages.ContainsKey(pkgId))
-                        {
-                            _packages[pkgId] = new PackageEntry(pkgId, pkgName)
-                            {
-                                Classification = PackageClassification.Unknown,
-                            };
-                        }
-
-                        if (_edges.Add(new Edge(fromProjId, pkgId, EdgeKind.PackageRefTransitive)))
-                            added++;
-                    }
-                }
-            }
-            catch
-            {
-                // Assets file malformed or locked — skip silently; direct refs are still captured.
-            }
-        }
-        return added;
     }
 
     public Graph Build(string root)
