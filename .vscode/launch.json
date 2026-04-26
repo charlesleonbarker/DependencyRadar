@@ -6,9 +6,9 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "dotnet: build",
-      "program": "${workspaceFolder}/src/Depmap.Service/bin/Debug/net8.0/DependencyRadar.Service.dll",
+      "program": "${workspaceFolder}/src/DependencyRadar.Service/bin/Debug/net8.0/DependencyRadar.Service.dll",
       "args": [],
-      "cwd": "${workspaceFolder}/src/Depmap.Service",
+      "cwd": "${workspaceFolder}/src/DependencyRadar.Service",
       "stopAtEntry": false,
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development",
@@ -25,7 +25,7 @@
       "request": "launch",
       "preLaunchTask": "web: dev",
       "url": "http://localhost:5173",
-      "webRoot": "${workspaceFolder}/src/Depmap.Web/src",
+      "webRoot": "${workspaceFolder}/src/DependencyRadar.Web/src",
       "sourceMaps": true
     }
   ],

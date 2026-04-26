@@ -1,4 +1,4 @@
-import type { AnyGraphNode, DepmapGraph, GraphEdge, PackageNode, ProjectKind, ProjectNode } from "../api/types";
+import type { AnyGraphNode, DependencyRadarGraph, GraphEdge, PackageNode, ProjectKind, ProjectNode } from "../api/types";
 import { effectiveProjectKinds } from "./projectKinds";
 
 export interface SearchSuggestion {
@@ -53,9 +53,9 @@ export interface SelectionDetails {
 }
 
 export interface GraphModel {
-  graph: DepmapGraph;
+  graph: DependencyRadarGraph;
   nodesById: Record<string, AnyGraphNode>;
-  reposById: Record<string, DepmapGraph["repos"][number]>;
+  reposById: Record<string, DependencyRadarGraph["repos"][number]>;
   projectsById: Record<string, ProjectNode>;
   projectsByRepo: Record<string, ProjectNode[]>;
   collapsedPackageTargets: Record<string, string>;
@@ -76,7 +76,7 @@ function getTraversalStartIds(startId: string, node: AnyGraphNode | undefined): 
   return node?.type === "package" && node.producedBy ? [startId, node.producedBy] : [startId];
 }
 
-export function buildModel(graph: DepmapGraph): GraphModel {
+export function buildModel(graph: DependencyRadarGraph): GraphModel {
   const nodesById: Record<string, AnyGraphNode> = {};
   const reposById: GraphModel["reposById"] = {};
   const projectsById: GraphModel["projectsById"] = {};

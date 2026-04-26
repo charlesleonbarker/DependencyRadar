@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <!-- Test the scanner's internals. InternalsVisibleTo is configured via AssemblyAttributes below. -->
-    <ProjectReference Include="..\..\src\Depmap.Core\Depmap.Core.csproj" />
+    <ProjectReference Include="..\..\src\DependencyRadar.Core\DependencyRadar.Core.csproj" />
   </ItemGroup>
 
 </Project>

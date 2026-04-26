@@ -14,7 +14,7 @@ Status legend:
 
 Problem: the **Dependency Paths** button does not reliably switch to the dependency-path layout. It often redraws whichever layout was previously active, although it works from a fresh page load.
 
-Likely area: `src/Depmap.Web/src/App.tsx`, `src/Depmap.Web/src/components/BottomControls.tsx`, `src/Depmap.Web/src/components/GraphCanvas.tsx`.
+Likely area: `src/DependencyRadar.Web/src/App.tsx`, `src/DependencyRadar.Web/src/components/BottomControls.tsx`, `src/DependencyRadar.Web/src/components/GraphCanvas.tsx`.
 
 Acceptance:
 
@@ -26,7 +26,7 @@ Acceptance:
 
 Problem: when the filter/search panel is open, clicking the close control on the selection sidebar closes the filter panel instead of the sidebar.
 
-Likely area: `src/Depmap.Web/src/App.tsx`, `src/Depmap.Web/src/components/SearchFilterDock.tsx`, `src/Depmap.Web/src/components/SelectionPopover.tsx`.
+Likely area: `src/DependencyRadar.Web/src/App.tsx`, `src/DependencyRadar.Web/src/components/SearchFilterDock.tsx`, `src/DependencyRadar.Web/src/components/SelectionPopover.tsx`.
 
 Acceptance:
 
@@ -38,7 +38,7 @@ Acceptance:
 
 Problem: some tag pills in search/filter UI render with a filled block style where the text has insufficient contrast.
 
-Likely area: `src/Depmap.Web/src/components/SearchFilterDock.tsx`, `src/Depmap.Web/src/app.css`.
+Likely area: `src/DependencyRadar.Web/src/components/SearchFilterDock.tsx`, `src/DependencyRadar.Web/src/app.css`.
 
 Acceptance:
 
@@ -53,7 +53,7 @@ Problem: **dependencies of dependencies** and **consumers of consumers** are har
 
 Goal: make the selected node's upstream and downstream relationships easier to scan as a dependency tree or grouped path list.
 
-Likely area: `src/Depmap.Web/src/domain/graphModel.ts`, `src/Depmap.Web/src/components/SelectionPopover.tsx`.
+Likely area: `src/DependencyRadar.Web/src/domain/graphModel.ts`, `src/DependencyRadar.Web/src/components/SelectionPopover.tsx`.
 
 Acceptance:
 
@@ -114,7 +114,7 @@ Acceptance:
 
 Problem: **What this is**, **Using the map**, and **Reading the graph** should be clearer for .NET developers who need to reason about breaking changes, retesting, and deployment impact.
 
-Likely area: `src/Depmap.Web/src/components/HelpContent.tsx`.
+Likely area: `src/DependencyRadar.Web/src/components/HelpContent.tsx`.
 
 Acceptance:
 
@@ -156,7 +156,7 @@ Acceptance:
 
 Problem: repository node labels are not visually centered.
 
-Likely area: `src/Depmap.Web/src/graph/graphStyle.ts`, `src/Depmap.Web/src/graph/cytoscapeModel.ts`.
+Likely area: `src/DependencyRadar.Web/src/graph/graphStyle.ts`, `src/DependencyRadar.Web/src/graph/cytoscapeModel.ts`.
 
 Acceptance:
 
@@ -167,7 +167,7 @@ Acceptance:
 
 Problem: license/about content is too visually prominent.
 
-Likely area: `src/Depmap.Web/src/components/HelpContent.tsx`, `src/Depmap.Web/src/app.css`.
+Likely area: `src/DependencyRadar.Web/src/components/HelpContent.tsx`, `src/DependencyRadar.Web/src/app.css`.
 
 Acceptance:
 
@@ -231,6 +231,6 @@ Acceptance:
 
 ## Implementation Notes
 
-- Keep frontend domain logic thin. If graph semantics or JSON shape changes, update `src/Depmap.Core`, service API types, frontend API types, graph model, rendering, and tests together.
+- Keep frontend domain logic thin. If graph semantics or JSON shape changes, update `src/DependencyRadar.Core`, service API types, frontend API types, graph model, rendering, and tests together.
 - Prefer targeted tests for scanner/parser changes. Use fixture estate smoke checks for end-to-end confidence.
 - Preserve local-only behaviour: no NuGet, GitHub, or other network metadata fetching.

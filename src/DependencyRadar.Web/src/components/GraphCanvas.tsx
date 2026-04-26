@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import cytoscape from "cytoscape";
 import cytoscapeDagre from "cytoscape-dagre";
 import cytoscapeFcose from "cytoscape-fcose";
-import type { DepmapGraph, MonitorStatus } from "../api/types";
+import type { DependencyRadarGraph, MonitorStatus } from "../api/types";
 import type { GraphModel } from "../domain/graphModel";
 import { applyNodeScale, applySelection, applySidebarHover, applyVisibility, buildElements, fitGraph, fitSelection, type FilterState, type LayoutId, runLayout } from "../graph/cytoscapeModel";
 import { GRAPH_STYLE } from "../graph/graphStyle";
@@ -21,7 +21,7 @@ function scaleFonts(cy: cytoscape.Core) {
 }
 
 interface GraphCanvasProps {
-  graph: DepmapGraph | null;
+  graph: DependencyRadarGraph | null;
   model: GraphModel | null;
   selectionId: string | null;
   hoverPathIds: string[][] | null;

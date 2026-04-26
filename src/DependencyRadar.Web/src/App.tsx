@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { DepmapGraph, GraphSummary, MonitorStatus, ProjectKind } from "./api/types";
+import type { DependencyRadarGraph, GraphSummary, MonitorStatus, ProjectKind } from "./api/types";
 import { apiUrl, fetchGraph, fetchStatus } from "./api/client";
 import { BottomControls } from "./components/BottomControls";
 import { GraphCanvas } from "./components/GraphCanvas";
@@ -34,7 +34,7 @@ function resolveSelectionFromUrlValue(model: GraphModel, value: string): string 
 
 export function App() {
   const [status, setStatus] = useState<MonitorStatus | null>(null);
-  const [graph, setGraph] = useState<DepmapGraph | null>(null);
+  const [graph, setGraph] = useState<DependencyRadarGraph | null>(null);
   const [error, setError] = useState("");
   const [selectionId, setSelectionId] = useState<string | null>(null);
   const [hoverPathIds, setHoverPathIds] = useState<string[][] | null>(null);

@@ -5,7 +5,7 @@
       "label": "dotnet: build",
       "type": "process",
       "command": "dotnet",
-      "args": ["build", "${workspaceFolder}/Depmap.sln", "-v", "minimal"],
+      "args": ["build", "${workspaceFolder}/DependencyRadar.sln", "-v", "minimal"],
       "group": "build",
       "problemMatcher": "$msCompile"
     },
@@ -13,7 +13,7 @@
       "label": "dotnet: test",
       "type": "process",
       "command": "dotnet",
-      "args": ["test", "${workspaceFolder}/Depmap.sln", "-v", "minimal"],
+      "args": ["test", "${workspaceFolder}/DependencyRadar.sln", "-v", "minimal"],
       "group": "test",
       "problemMatcher": "$msCompile"
     },
@@ -21,14 +21,14 @@
       "label": "web: install",
       "type": "process",
       "command": "npm",
-      "args": ["install", "--prefix", "${workspaceFolder}/src/Depmap.Web"],
+      "args": ["install", "--prefix", "${workspaceFolder}/src/DependencyRadar.Web"],
       "problemMatcher": []
     },
     {
       "label": "web: typecheck",
       "type": "process",
       "command": "npm",
-      "args": ["run", "typecheck", "--prefix", "${workspaceFolder}/src/Depmap.Web"],
+      "args": ["run", "typecheck", "--prefix", "${workspaceFolder}/src/DependencyRadar.Web"],
       "group": "build",
       "problemMatcher": "$tsc"
     },
@@ -36,7 +36,7 @@
       "label": "web: build",
       "type": "process",
       "command": "npm",
-      "args": ["run", "build", "--prefix", "${workspaceFolder}/src/Depmap.Web"],
+      "args": ["run", "build", "--prefix", "${workspaceFolder}/src/DependencyRadar.Web"],
       "group": "build",
       "problemMatcher": "$tsc"
     },
@@ -48,7 +48,7 @@
         "run",
         "dev",
         "--prefix",
-        "${workspaceFolder}/src/Depmap.Web",
+        "${workspaceFolder}/src/DependencyRadar.Web",
         "--",
         "--host",
         "localhost",

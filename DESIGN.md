@@ -37,19 +37,19 @@ The stable boundary is the graph JSON contract produced by `DependencyRadar.Core
 
 ## Project layout
 
-- `src/Depmap.Core/`
+- `src/DependencyRadar.Core/`
   Shared scanner logic and source of truth for discovery, parsing, graph construction, and JSON shape.
 
-- `src/Depmap.Service/`
+- `src/DependencyRadar.Service/`
   Always-on backend API.
 
-- `src/Depmap.Web/`
+- `src/DependencyRadar.Web/`
   Frontend source.
 
-- `test/Depmap.Tests/`
+- `test/DependencyRadar.Tests/`
   Unit tests against `DependencyRadar.Core`.
 
-The source folders retain their original `Depmap.*` names for now. Namespaces, assemblies, configuration, deployment labels, and user-facing copy use `DependencyRadar` / Dependency Radar.
+Source folders, namespaces, assemblies, configuration, deployment labels, and user-facing copy all use `DependencyRadar` / Dependency Radar.
 
 ## Backend responsibilities
 

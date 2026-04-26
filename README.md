@@ -21,24 +21,24 @@ dotnet test
 
 ## Projects
 
-- `src/Depmap.Core` — shared parsing, discovery, graph building, JSON serialization.
-- `src/Depmap.Service` — backend API and folder monitoring.
-- `src/Depmap.Web` — standalone React frontend.
+- `src/DependencyRadar.Core` — shared parsing, discovery, graph building, JSON serialization.
+- `src/DependencyRadar.Service` — backend API and folder monitoring.
+- `src/DependencyRadar.Web` — standalone React frontend.
 
-The source folders keep their original `Depmap.*` paths for now, while the product, namespaces, assembly names, Docker image, and deployment surface use `Dependency Radar`.
+Source folders, namespaces, assembly names, Docker image, and deployment surface all use `DependencyRadar` / Dependency Radar.
 
 ## Backend
 
-Configure watched roots in [src/Depmap.Service/appsettings.json](/Users/charles/Documents/Claude/Projects/dependancyMap/src/Depmap.Service/appsettings.json) under `DependencyRadar:Roots`, then run:
+Configure watched roots in [src/DependencyRadar.Service/appsettings.json](/Users/charles/Documents/Claude/Projects/dependancyMap/src/DependencyRadar.Service/appsettings.json) under `DependencyRadar:Roots`, then run:
 
 ```bash
-dotnet run --project src/Depmap.Service
+dotnet run --project src/DependencyRadar.Service
 ```
 
 If `localhost:5000` is occupied on your machine, use another port:
 
 ```bash
-ASPNETCORE_URLS=http://localhost:5001 dotnet run --project src/Depmap.Service
+ASPNETCORE_URLS=http://localhost:5001 dotnet run --project src/DependencyRadar.Service
 ```
 
 API surface:
@@ -57,8 +57,8 @@ If local absolute paths are too noisy in the UI, configure `DependencyRadar:Disp
 Run the frontend separately:
 
 ```bash
-npm install --prefix src/Depmap.Web
-npm run dev --prefix src/Depmap.Web
+npm install --prefix src/DependencyRadar.Web
+npm run dev --prefix src/DependencyRadar.Web
 ```
 
 By default Vite runs on `http://localhost:5173` and proxies `/api/*` to `http://localhost:5001`.
@@ -66,7 +66,7 @@ By default Vite runs on `http://localhost:5173` and proxies `/api/*` to `http://
 If you want the frontend to target a different backend directly, set `VITE_API_BASE_URL`:
 
 ```bash
-VITE_API_BASE_URL=http://localhost:5001 npm run dev --prefix src/Depmap.Web
+VITE_API_BASE_URL=http://localhost:5001 npm run dev --prefix src/DependencyRadar.Web
 ```
 
 ## Local development
@@ -74,9 +74,9 @@ VITE_API_BASE_URL=http://localhost:5001 npm run dev --prefix src/Depmap.Web
 Run backend and frontend as separate processes:
 
 ```bash
-ASPNETCORE_URLS=http://localhost:5001 dotnet run --project src/Depmap.Service
-npm install --prefix src/Depmap.Web
-npm run dev --prefix src/Depmap.Web
+ASPNETCORE_URLS=http://localhost:5001 dotnet run --project src/DependencyRadar.Service
+npm install --prefix src/DependencyRadar.Web
+npm run dev --prefix src/DependencyRadar.Web
 ```
 
 ## VS Code
@@ -123,10 +123,10 @@ The frontend is not served by this container. Point your separately running fron
 ## Repository layout
 
 ```text
-src/Depmap.Core/        shared scanner logic
-src/Depmap.Service/     backend API
-src/Depmap.Web/         React frontend
-test/Depmap.Tests/      xunit unit tests
+src/DependencyRadar.Core/        shared scanner logic
+src/DependencyRadar.Service/     backend API
+src/DependencyRadar.Web/         React frontend
+test/DependencyRadar.Tests/      xunit unit tests
 test/fixtures/          synthetic multi-repo fixture estate
 ```
 

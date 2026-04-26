@@ -47,7 +47,7 @@ export interface GraphEdge {
   version?: string;
 }
 
-export interface DepmapGraph {
+export interface DependencyRadarGraph {
   root?: string;
   repos: RepoNode[];
   solutions: SolutionNode[];

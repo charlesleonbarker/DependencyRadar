@@ -1,4 +1,4 @@
-import type { DepmapGraph, MonitorStatus } from "./types";
+import type { DependencyRadarGraph, MonitorStatus } from "./types";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
@@ -12,7 +12,7 @@ export async function fetchStatus(): Promise<MonitorStatus> {
   return response.json();
 }
 
-export async function fetchGraph(): Promise<DepmapGraph | null> {
+export async function fetchGraph(): Promise<DependencyRadarGraph | null> {
   const response = await fetch(apiUrl("/api/graph"), { cache: "no-store" });
   if (!response.ok) {
     if (response.status === 503) return null;

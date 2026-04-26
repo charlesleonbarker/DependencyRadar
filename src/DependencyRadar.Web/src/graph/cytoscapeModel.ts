@@ -1,5 +1,5 @@
 import type cytoscape from "cytoscape";
-import type { DepmapGraph, ProjectKind } from "../api/types";
+import type { DependencyRadarGraph, ProjectKind } from "../api/types";
 import type { GraphModel } from "../domain/graphModel";
 import { effectiveProjectKinds } from "../domain/projectKinds";
 
@@ -11,7 +11,7 @@ export interface FilterState {
   showExternal: boolean;
 }
 
-export function buildElements(graph: DepmapGraph, groupByRepo: boolean): cytoscape.ElementDefinition[] {
+export function buildElements(graph: DependencyRadarGraph, groupByRepo: boolean): cytoscape.ElementDefinition[] {
   const elements: cytoscape.ElementDefinition[] = [];
   const collapsedPackages = new Map<string, string>();
 

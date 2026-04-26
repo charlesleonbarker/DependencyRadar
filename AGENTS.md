@@ -13,8 +13,8 @@ The full architecture is in [`DESIGN.md`](DESIGN.md). Start there before making 
 ```bash
 dotnet build
 dotnet test
-dotnet run --project src/Depmap.Service
-npm run dev --prefix src/Depmap.Web
+dotnet run --project src/DependencyRadar.Service
+npm run dev --prefix src/DependencyRadar.Web
 ```
 
 The fixture estate in `test/fixtures/` is the main end-to-end smoke target.
@@ -22,10 +22,10 @@ The fixture estate in `test/fixtures/` is the main end-to-end smoke target.
 ## Repo layout
 
 ```text
-src/Depmap.Core/        shared parsing, discovery, graph building, JSON serialization
-src/Depmap.Service/     backend API + folder monitoring
-src/Depmap.Web/         React frontend
-test/Depmap.Tests/      xunit unit tests (uses InternalsVisibleTo -> scanner internals)
+src/DependencyRadar.Core/        shared parsing, discovery, graph building, JSON serialization
+src/DependencyRadar.Service/     backend API + folder monitoring
+src/DependencyRadar.Web/         React frontend
+test/DependencyRadar.Tests/      xunit unit tests (uses InternalsVisibleTo -> scanner internals)
 test/fixtures/          synthetic multi-repo .NET estate for end-to-end verification
 DESIGN.md               full design doc; source of truth for architecture decisions
 README.md               user-facing README
@@ -42,10 +42,10 @@ README.md               user-facing README
 
 ## Conventions
 
-- `src/Depmap.Core/` and `src/Depmap.Service/` use `TreatWarningsAsErrors=true` and `Nullable=enable`.
+- `src/DependencyRadar.Core/` and `src/DependencyRadar.Service/` use `TreatWarningsAsErrors=true` and `Nullable=enable`.
 - Types are `internal` by default; `InternalsVisibleTo("DependencyRadar.Tests")` exposes scanner internals to tests.
 - Parsers deliberately avoid `Microsoft.Build`.
-- Frontend is React + Cytoscape in `src/Depmap.Web`. Keep domain logic thin there.
+- Frontend is React + Cytoscape in `src/DependencyRadar.Web`. Keep domain logic thin there.
 - Stable node IDs come from `GraphBuilder.IdFor(kind, raw)`.
 
 ## When extending the scanner

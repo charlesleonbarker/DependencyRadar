@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Depmap.Core\Depmap.Core.csproj" />
+    <ProjectReference Include="..\DependencyRadar.Core\DependencyRadar.Core.csproj" />
   </ItemGroup>
 
 </Project>
