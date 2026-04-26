@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import type { MutableRefObject } from "react";
 import cytoscape from "cytoscape";
 import cytoscapeDagre from "cytoscape-dagre";
 import cytoscapeFcose from "cytoscape-fcose";
@@ -56,6 +57,7 @@ export function GraphCanvas({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
   const modelRef = useRef<GraphModel | null>(model);
+  const lastSelectionFitKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     modelRef.current = model;
@@ -88,11 +90,12 @@ export function GraphCanvas({
     scaleFonts(cy);
     applySelection(cy, model, selectionId);
     applySidebarHover(cy, model, hoverPathIds);
-    fitSelection(cy, model, selectionId, leftInset);
+    fitSelectionOnce(cy, model, selectionId, leftInset, lastSelectionFitKeyRef);
 
     return () => {
       cy.destroy();
       cyRef.current = null;
+      lastSelectionFitKeyRef.current = null;
     };
   }, [graph, groupByRepo]);
 
@@ -104,7 +107,8 @@ export function GraphCanvas({
     scaleFonts(cy);
     applySelection(cy, model, selectionId);
     applySidebarHover(cy, model, hoverPathIds);
-    fitSelection(cy, model, selectionId, leftInset);
+    lastSelectionFitKeyRef.current = null;
+    fitSelectionOnce(cy, model, selectionId, leftInset, lastSelectionFitKeyRef);
   }, [filterState, layout, layoutRunKey, graph, groupByRepo]);
 
   useEffect(() => {
@@ -115,7 +119,7 @@ export function GraphCanvas({
     const cy = cyRef.current;
     if (!cy) return;
     applySelection(cy, model, selectionId);
-    fitSelection(cy, model, selectionId, leftInset);
+    fitSelectionOnce(cy, model, selectionId, leftInset, lastSelectionFitKeyRef);
   }, [model, selectionId, leftInset]);
 
   useEffect(() => {
@@ -124,6 +128,7 @@ export function GraphCanvas({
 
   useEffect(() => {
     if (viewportResetKey === 0) return;
+    lastSelectionFitKeyRef.current = null;
     fitGraph(cyRef.current, leftInset);
   }, [viewportResetKey, leftInset]);
 
@@ -141,3 +146,21 @@ export function GraphCanvas({
   return <div ref={containerRef} className="graph-surface" />;
 }
 
+function fitSelectionOnce(
+  cy: cytoscape.Core | null,
+  model: GraphModel | null,
+  selectionId: string | null,
+  leftInset: number,
+  lastFitKeyRef: MutableRefObject<string | null>,
+): void {
+  if (!selectionId) {
+    lastFitKeyRef.current = null;
+    return;
+  }
+
+  const fitKey = `${selectionId}:${leftInset}`;
+  if (lastFitKeyRef.current === fitKey) return;
+
+  lastFitKeyRef.current = fitKey;
+  fitSelection(cy, model, selectionId, leftInset);
+}

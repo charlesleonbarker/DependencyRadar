@@ -4,7 +4,7 @@ Context for AI agents working in this repo.
 
 ## What this repo is
 
-Dependency Radar is a split .NET backend + React frontend for mapping the dependency web across a folder of .NET git repositories and answering *"what needs retesting if this package changes?"* via reverse-BFS blast-radius analysis.
+Dependency Radar is a .NET backend + React frontend for mapping the dependency web across a folder of .NET git repositories and answering *"what needs retesting or redeploying if this project or NuGet package changes?"* via reverse-BFS blast-radius analysis.
 
 The full architecture is in [`DESIGN.md`](DESIGN.md). Start there before making non-trivial changes.
 
@@ -14,6 +14,7 @@ The full architecture is in [`DESIGN.md`](DESIGN.md). Start there before making 
 dotnet build
 dotnet test
 dotnet run --project src/DependencyRadar.Service
+npm run typecheck --prefix src/DependencyRadar.Web
 npm run dev --prefix src/DependencyRadar.Web
 ```
 
@@ -37,8 +38,9 @@ README.md               user-facing README
 2. **Unknowns are first-class.** When something cannot be resolved locally, it stays `unknown` rather than guessed.
 3. **Multi-TFM projects = one node.** Dependency sets are unioned across target frameworks.
 4. **No test-runner output.** The UI lists affected test project paths; it does not generate `dotnet test` commands.
-5. **Frontend and backend are separate runtimes.** `DependencyRadar.Service` is API-only. `DependencyRadar.Web` consumes that API and is not hosted by the backend.
+5. **Frontend and backend are separate in local development.** `DependencyRadar.Web` consumes the HTTP API through Vite. The Docker image builds the frontend and serves it from `DependencyRadar.Service` on the same port as `/api`.
 6. **The produced-by edge is load-bearing.** `Package -> producing Project` closes the internal package loop.
+7. **Internal NuGet packages are consolidated in the UI.** The producing project is the primary node/Impact Panel target; package IDs are aliases and version carriers, not duplicate primary nodes.
 
 ## Conventions
 
@@ -47,12 +49,17 @@ README.md               user-facing README
 - Parsers deliberately avoid `Microsoft.Build`.
 - Frontend is React + Cytoscape in `src/DependencyRadar.Web`. Keep domain logic thin there.
 - Stable node IDs come from `GraphBuilder.IdFor(kind, raw)`.
+- User-facing project type copy should say **NuGet package**, not "packable". Keep JSON key `nuget-producing` stable.
+- The selected-node side surface is called the **Impact Panel**, not "sidebar".
+- Relationship badges are `Direct Project`, `Direct Package`, and `Indirect Package`.
+- Name prefix stripping is configured through `DependencyRadar:NamePrefixes` and applies to repo, solution, and project display names only.
 
 ## When extending the scanner
 
 - Parse edge cases: add targeted parser tests instead of relying only on fixture runs.
 - New edge kinds: update `EdgeKind`, JSON serialization, and frontend rendering together.
 - New project classifications: update classifier, JSON shape, and frontend filters/styles together.
+- If changing internal package semantics, preserve package-reference version tracing and the consolidated producer-project UX.
 
 ## Environment notes
 

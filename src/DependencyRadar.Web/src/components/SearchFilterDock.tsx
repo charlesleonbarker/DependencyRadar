@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import type { ProjectKind, RepoNode } from "../api/types";
 import type { SearchSuggestion } from "../domain/graphModel";
-import { DEFAULT_KINDS, KIND_CLASS, KIND_LABELS, KIND_SHORT } from "../domain/projectKinds";
+import { DEFAULT_KINDS, KIND_CLASS, KIND_SHORT } from "../domain/projectKinds";
 
 interface SearchFilterDockProps {
   searchText: string;
@@ -39,34 +39,38 @@ export function SearchFilterDock({
 }: SearchFilterDockProps) {
   const dockRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
-    if (!filterOpen) return;
+    if (!filterOpen && !searchOpen) return;
     const handler = (event: MouseEvent) => {
       if ((event.target as Element | null)?.closest(".selection-popover")) return;
       if (dockRef.current && !dockRef.current.contains(event.target as Node)) {
         setFilterOpen(() => false);
+        setSearchOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [filterOpen, setFilterOpen]);
+  }, [filterOpen, searchOpen, setFilterOpen]);
 
   const grouped = useMemo(() => {
     const query = searchText.trim().toLowerCase();
-    if (!query) return null;
-    const matching = suggestions.filter(
-      (item) =>
-        item.label.toLowerCase().includes(query) ||
-        String(item.sublabel || "").toLowerCase().includes(query) ||
-        (item.aliases || []).some((alias) => alias.toLowerCase().includes(query)),
-    );
+    if (!query && !searchOpen) return null;
+    const matching = query
+      ? suggestions.filter(
+          (item) =>
+            item.label.toLowerCase().includes(query) ||
+            String(item.sublabel || "").toLowerCase().includes(query) ||
+            (item.aliases || []).some((alias) => alias.toLowerCase().includes(query)),
+        )
+      : suggestions;
     return {
       repos: matching.filter((s) => s.type === "repo"),
       projects: matching.filter((s) => s.type === "project"),
       packages: matching.filter((s) => s.type === "package"),
     };
-  }, [suggestions, searchText]);
+  }, [suggestions, searchText, searchOpen]);
   const sortedRepos = useMemo(
     () => [...repos].sort((a, b) => a.name.localeCompare(b.name)),
     [repos],
@@ -86,11 +90,13 @@ export function SearchFilterDock({
     if (!id) return;
     onSuggestionSelect(id);
     setSearchText("");
+    setSearchOpen(false);
   };
 
   const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Escape") {
       setSearchText("");
+      setSearchOpen(false);
       setFilterOpen(() => false);
       return;
     }
@@ -112,7 +118,7 @@ export function SearchFilterDock({
   const resultIndex = (id: string) => flatResults.findIndex((item) => item.id === id);
 
   return (
-    <div className="search-dock" ref={dockRef}>
+    <div className={`search-dock${filterOpen ? " filter-open" : ""}`} ref={dockRef}>
       <div className="dock-panel search-filter-panel">
         <div className="search-row">
           <input
@@ -120,19 +126,18 @@ export function SearchFilterDock({
             type="search"
             value={searchText}
             placeholder="Search projects and packages…"
-            title="Search project names, package IDs, and package classifications"
             role="combobox"
             aria-expanded={Boolean(grouped)}
             aria-controls="search-suggestions"
             aria-activedescendant={flatResults[activeIndex] ? `suggestion-${flatResults[activeIndex].id}` : undefined}
             onChange={(event) => setSearchText(event.target.value)}
+            onFocus={() => setSearchOpen(true)}
             onKeyDown={handleSearchKeyDown}
           />
           <button
-            className={`ghost-button filter-toggle has-tooltip${filterOpen ? " active" : ""}`}
+            className={`ghost-button filter-toggle${filterOpen ? " active" : ""}`}
             type="button"
             aria-pressed={filterOpen}
-            data-tooltip="Filter project types, repositories, and external package visibility."
             onClick={() => setFilterOpen((c) => !c)}
           >
             Filter
@@ -228,9 +233,8 @@ export function SearchFilterDock({
                 <button
                   key={kind}
                   type="button"
-                  className={`kind-pill has-tooltip${kindFilters[kind] !== false ? " active" : ""}`}
+                  className={`kind-pill${kindFilters[kind] !== false ? " active" : ""}`}
                   aria-pressed={kindFilters[kind] !== false}
-                  data-tooltip={`${KIND_LABELS[kind]} projects`}
                   onClick={() => setKindFilters((c) => ({ ...c, [kind]: !c[kind] }))}
                 >
                   <span className={`kind-pill-shape ${KIND_CLASS[kind]}`} />
@@ -239,9 +243,8 @@ export function SearchFilterDock({
               ))}
               <button
                 type="button"
-                className={`kind-pill package-pill has-tooltip${showPackages ? " active" : ""}`}
+                className={`kind-pill package-pill${showPackages ? " active" : ""}`}
                 aria-pressed={showPackages}
-                data-tooltip="Show external and unresolved package nodes. Internal package IDs stay searchable through their producer project."
                 onClick={() => setShowPackages(!showPackages)}
               >
                 <span className="kind-pill-shape package-pill-shape" />
@@ -250,15 +253,32 @@ export function SearchFilterDock({
             </div>
             {sortedRepos.length > 0 ? (
               <>
-                <div className="filter-section-title">Repositories</div>
+                <div className="filter-section-row">
+                  <div className="filter-section-title">Repositories</div>
+                  <div className="repo-filter-actions">
+                    <button
+                      type="button"
+                      className="repo-filter-action"
+                      onClick={() => setRepoFilters((current) => ({ ...current, ...Object.fromEntries(sortedRepos.map((repo) => [repo.id, true])) }))}
+                    >
+                      All
+                    </button>
+                    <button
+                      type="button"
+                      className="repo-filter-action"
+                      onClick={() => setRepoFilters((current) => ({ ...current, ...Object.fromEntries(sortedRepos.map((repo) => [repo.id, false])) }))}
+                    >
+                      None
+                    </button>
+                  </div>
+                </div>
                 <div className={`repo-filter-list${compactRepoFilter ? " compact" : ""}`}>
                   {sortedRepos.map((repo) => (
                     <button
                       key={repo.id}
                       type="button"
-                      className={`repo-filter-item has-tooltip${repoFilters[repo.id] !== false ? " active" : ""}`}
+                      className={`repo-filter-item${repoFilters[repo.id] !== false ? " active" : ""}`}
                       aria-pressed={repoFilters[repo.id] !== false}
-                      data-tooltip={repo.path}
                       onClick={() => setRepoFilters((c) => ({ ...c, [repo.id]: c[repo.id] === false }))}
                     >
                       <span className="repo-filter-dot" />

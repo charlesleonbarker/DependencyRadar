@@ -1,19 +1,27 @@
-import type { AnyGraphNode, ProjectKind, ProjectNode } from "../api/types";
-import type { DependencyGroup, DependencyItem, ImpactProject, ProjectGroup, SelectionDetails } from "../domain/graphModel";
-import { effectiveProjectKinds, KIND_CLASS, KIND_LABELS, KIND_SHORT } from "../domain/projectKinds";
+import { useState } from "react";
+import type { AnyGraphNode, PackageNode, ProjectKind, ProjectNode } from "../api/types";
+import type { DependencyGroup, DependencyItem, ImpactProject, ProjectGroup, RouteKind, SelectionDetails } from "../domain/graphModel";
+import { effectiveProjectKinds, KIND_SHORT } from "../domain/projectKinds";
+import { PortalTooltip } from "./PortalTooltip";
 
 interface SelectionPopoverProps {
   selection: SelectionDetails | null;
   showExternal: boolean;
+  kindFilters: Record<ProjectKind, boolean>;
   onClose(): void;
   onSelect(id: string): void;
   onHoverPath(pathIds: string[][] | null): void;
 }
 
-export function SelectionPopover({ selection, showExternal, onClose, onSelect, onHoverPath }: SelectionPopoverProps) {
+export function SelectionPopover({ selection, showExternal, kindFilters, onClose, onSelect, onHoverPath }: SelectionPopoverProps) {
   if (!selection) return null;
 
   const { node } = selection;
+  const repoProjects = selection.repoProjects?.filter((project) => projectPassesKindFilter(project, kindFilters));
+  const tests = filterProjectGroups(selection.tests, kindFilters);
+  const deployables = filterProjectGroups(selection.deployables, kindFilters);
+  const consumers = filterProjectGroups(selection.consumers, kindFilters);
+  const internalDependencies = filterDependencyGroups(selection.internalDependencies, kindFilters);
 
   return (
     <div className="selection-popover">
@@ -23,14 +31,6 @@ export function SelectionPopover({ selection, showExternal, onClose, onSelect, o
             <h2><DottedName value={node.name} /></h2>
             <button className="ghost-button" type="button" onClick={onClose}>Close</button>
           </div>
-
-          {node.type === "project" ? (
-            <div className="pill-row">
-              {effectiveProjectKinds(node.kinds).map((kind) => (
-                <span key={kind} className={`pill ${kind}`}>{KIND_SHORT[kind]}</span>
-              ))}
-            </div>
-          ) : null}
 
           {node.type === "package" && selection.producedByProject ? (
             <button
@@ -46,14 +46,16 @@ export function SelectionPopover({ selection, showExternal, onClose, onSelect, o
             </button>
           ) : null}
 
-          <NodeLabels node={node} producedByName={selection.producedByProject?.name} />
+          <NodeLabels node={node} producedByName={selection.producedByProject?.name} producedPackages={selection.producedPackages} />
         </div>
-        {selection.repoProjects ? <RepoProjectList selectedId={node.id} projects={selection.repoProjects} onSelect={onSelect} onHoverPath={onHoverPath} /> : null}
-        <ProjectImpactSummary title="Affected tests" empty="No affected test projects" groups={selection.tests} selectedId={node.id} onSelect={onSelect} onHoverPath={onHoverPath} />
-        <ProjectImpactSummary title="Deployables" empty="No affected web or service projects" groups={selection.deployables} selectedId={node.id} onSelect={onSelect} onHoverPath={onHoverPath} />
-        <ConsumerList selectedId={node.id} groups={selection.consumers} onSelect={onSelect} onHoverPath={onHoverPath} />
-        <InternalDependencyList selectedId={node.id} groups={selection.internalDependencies} onSelect={onSelect} onHoverPath={onHoverPath} />
-        {showExternal ? <ExternalDependencyList selectedId={node.id} dependencies={selection.externalDependencies} onSelect={onSelect} onHoverPath={onHoverPath} /> : null}
+        <div className="selection-details-panel">
+          {repoProjects ? <RepoProjectList selectedId={node.id} projects={repoProjects} onSelect={onSelect} onHoverPath={onHoverPath} /> : null}
+          <ProjectImpactSummary title="Affected Tests" empty="No affected test projects" groups={tests} selectedId={node.id} selectedName={node.name} onSelect={onSelect} onHoverPath={onHoverPath} />
+          <ProjectImpactSummary title="Affected Deployments" empty="No affected web or service projects" groups={deployables} selectedId={node.id} selectedName={node.name} onSelect={onSelect} onHoverPath={onHoverPath} />
+          <ConsumerList selectedId={node.id} selectedName={node.name} groups={consumers} onSelect={onSelect} onHoverPath={onHoverPath} />
+          <InternalDependencyList selectedId={node.id} selectedName={node.name} groups={internalDependencies} onSelect={onSelect} onHoverPath={onHoverPath} />
+          {showExternal ? <ExternalDependencyList selectedId={node.id} selectedName={node.name} dependencies={selection.externalDependencies} onSelect={onSelect} onHoverPath={onHoverPath} /> : null}
+        </div>
       </div>
     </div>
   );
@@ -61,8 +63,7 @@ export function SelectionPopover({ selection, showExternal, onClose, onSelect, o
 
 function RepoProjectList({ selectedId, projects, onSelect, onHoverPath }: { selectedId: string; projects: ProjectNode[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
   return (
-    <section className="popover-section">
-      <SectionTitle title="Projects" count={projects.length} />
+    <CollapsibleSection title="Projects" count={projects.length} defaultOpen={false}>
       {projects.length === 0 ? (
         <p className="muted">None</p>
       ) : (
@@ -81,102 +82,119 @@ function RepoProjectList({ selectedId, projects, onSelect, onHoverPath }: { sele
                   <span className="impact-link-main">
                     <span className="link-name"><DottedName value={project.name} /></span>
                   </span>
-                  <ProjectKindLabels kinds={project.kinds} />
                 </button>
               </li>
             ))}
           </ul>
         </div>
       )}
-    </section>
+    </CollapsibleSection>
   );
 }
 
-function ProjectImpactSummary({ title, empty, groups, selectedId, onSelect, onHoverPath }: { title: string; empty: string; groups: ProjectGroup[]; selectedId: string; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+function ProjectImpactSummary({ title, empty, groups, selectedId, selectedName, onSelect, onHoverPath }: { title: string; empty: string; groups: ProjectGroup[]; selectedId: string; selectedName: string; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
   const impacts = flattenGroups(groups);
   return (
-    <section className="popover-section">
-      <SectionTitle title={title} count={impacts.length} />
+    <CollapsibleSection title={title} count={impacts.length} defaultOpen>
       {impacts.length === 0 ? (
         <p className="muted">{empty}</p>
       ) : (
-        <ProjectImpactGroups label="Projects" groups={groups} selectedId={selectedId} onSelect={onSelect} onHoverPath={onHoverPath} />
+        <ProjectImpactGroups groups={groups} selectedId={selectedId} selectedName={selectedName} onSelect={onSelect} onHoverPath={onHoverPath} />
       )}
-    </section>
+    </CollapsibleSection>
   );
 }
 
-function NodeLabels({ node, producedByName }: { node: AnyGraphNode; producedByName?: string }) {
-  const labels = nodeLabels(node, producedByName);
-  if (labels.length === 0) return null;
+function NodeLabels({ node, producedByName, producedPackages }: { node: AnyGraphNode; producedByName?: string; producedPackages?: PackageNode[] }) {
+  const labels = nodeLabels(node, producedByName, producedPackages);
+  const kindLabels = node.type === "project" ? effectiveProjectKinds(node.kinds) : [];
+  if (labels.length === 0 && kindLabels.length === 0) return null;
 
-  return <div className="node-labels">{labels.map((label) => <span key={label} className="node-label">{label}</span>)}</div>;
+  return (
+    <div className="node-labels">
+      {kindLabels.map((kind) => (
+        <span key={kind} className={`pill ${kind}`}>{KIND_SHORT[kind]}</span>
+      ))}
+      {labels.map((label) => <span key={label} className="node-label">{label}</span>)}
+    </div>
+  );
+}
+
+function RowVersionMeta({ consumerVersions, dependencyVersions, selectedName, rowName }: { consumerVersions?: string[]; dependencyVersions?: string[]; selectedName: string; rowName: string }) {
+  if ((!consumerVersions || consumerVersions.length === 0) && (!dependencyVersions || dependencyVersions.length === 0)) return null;
+
+  return (
+    <span className="row-version-meta">
+      {consumerVersions && consumerVersions.length > 0 ? (
+        <PortalTooltip text={`${rowName} references ${selectedName} at ${formatVersions(consumerVersions)}.`}>
+          <span className="version-chip referenced">refs {formatVersions(consumerVersions)}</span>
+        </PortalTooltip>
+      ) : null}
+      {dependencyVersions && dependencyVersions.length > 0 ? (
+        <PortalTooltip text={`${selectedName} is using ${rowName} at ${formatVersions(dependencyVersions)}.`}>
+          <span className="version-chip used">using {formatVersions(dependencyVersions)}</span>
+        </PortalTooltip>
+      ) : null}
+    </span>
+  );
 }
 
 function ConsumerList({
   selectedId,
+  selectedName,
   groups,
   onSelect,
   onHoverPath,
 }: {
   selectedId: string;
+  selectedName: string;
   groups: ProjectGroup[];
   onSelect(id: string): void;
   onHoverPath(pathIds: string[][] | null): void;
 }) {
   const impacts = flattenGroups(groups);
-  const directGroups = splitProjectGroups(groups, (impact) => impact.depth <= 1);
-  const indirectGroups = splitProjectGroups(groups, (impact) => impact.depth > 1);
-
   return (
-    <section className="popover-section">
-      <SectionTitle title="Consumers" count={impacts.length} />
+    <CollapsibleSection title="All Consumers" count={impacts.length} defaultOpen={false}>
       {impacts.length === 0 ? (
         <p className="muted">None</p>
       ) : (
-        <>
-          <ProjectImpactGroups label="Direct consumers" groups={directGroups} selectedId={selectedId} onSelect={onSelect} onHoverPath={onHoverPath} />
-          <ProjectImpactGroups label="Indirect consumers" groups={indirectGroups} selectedId={selectedId} onSelect={onSelect} onHoverPath={onHoverPath} />
-        </>
+        <ProjectImpactGroups groups={groups} selectedId={selectedId} selectedName={selectedName} onSelect={onSelect} onHoverPath={onHoverPath} />
       )}
-    </section>
+    </CollapsibleSection>
   );
 }
 
-function InternalDependencyList({ selectedId, groups, onSelect, onHoverPath }: { selectedId: string; groups: DependencyGroup[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+function InternalDependencyList({ selectedId, selectedName, groups, onSelect, onHoverPath }: { selectedId: string; selectedName: string; groups: DependencyGroup[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
   const dependencies = groups.flatMap((group) => group.dependencies);
   return (
-    <section className="popover-section">
-      <SectionTitle title="Internal dependencies" count={dependencies.length} />
+    <CollapsibleSection title="All Dependencies" count={dependencies.length} defaultOpen={false}>
       {dependencies.length === 0 ? (
         <p className="muted">None</p>
       ) : (
-        <DependencyGroups groups={groups} selectedId={selectedId} onSelect={onSelect} onHoverPath={onHoverPath} />
+        <DependencyGroups groups={groups} selectedId={selectedId} selectedName={selectedName} onSelect={onSelect} onHoverPath={onHoverPath} />
       )}
-    </section>
+    </CollapsibleSection>
   );
 }
 
-function ExternalDependencyList({ selectedId, dependencies, onSelect, onHoverPath }: { selectedId: string; dependencies: DependencyItem[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+function ExternalDependencyList({ selectedId, selectedName, dependencies, onSelect, onHoverPath }: { selectedId: string; selectedName: string; dependencies: DependencyItem[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
   return (
-    <section className="popover-section">
-      <SectionTitle title="External packages" count={dependencies.length} />
+    <CollapsibleSection title="External packages" count={dependencies.length} defaultOpen={false}>
       {dependencies.length === 0 ? (
         <p className="muted">None</p>
       ) : (
-        <DependencyRows selectedId={selectedId} dependencies={dependencies} onSelect={onSelect} onHoverPath={onHoverPath} />
+        <DependencyRows selectedId={selectedId} selectedName={selectedName} dependencies={dependencies} onSelect={onSelect} onHoverPath={onHoverPath} />
       )}
-    </section>
+    </CollapsibleSection>
   );
 }
 
-function ProjectImpactGroups({ label, groups, selectedId, onSelect, onHoverPath }: { label: string; groups: ProjectGroup[]; selectedId: string; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+function ProjectImpactGroups({ groups, selectedId, selectedName, onSelect, onHoverPath }: { groups: ProjectGroup[]; selectedId: string; selectedName: string; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
   const impacts = flattenGroups(groups);
   if (impacts.length === 0) return null;
 
   return (
     <div className="relationship-block">
-      <div className="relationship-label">{label}</div>
       <div className="link-groups">
         {groups.map((group) => (
           <div key={group.repoName} className="link-group">
@@ -194,9 +212,9 @@ function ProjectImpactGroups({ label, groups, selectedId, onSelect, onHoverPath 
                   >
                     <span className="impact-link-main">
                       <span className="link-name"><DottedName value={impact.project.name} /></span>
-                      <RouteBadge depth={impact.depth} hasAlternativeRoute={impact.hasAlternativeRoute} />
+                      <RouteBadge routeKind={impact.routeKind} />
                     </span>
-                    <ProjectKindLabels kinds={impact.project.kinds} />
+                    <RowVersionMeta consumerVersions={impact.referenceVersions} selectedName={selectedName} rowName={impact.project.name} />
                   </button>
                 </li>
               ))}
@@ -208,7 +226,7 @@ function ProjectImpactGroups({ label, groups, selectedId, onSelect, onHoverPath 
   );
 }
 
-function DependencyGroups({ groups, selectedId, onSelect, onHoverPath }: { groups: DependencyGroup[]; selectedId: string; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+function DependencyGroups({ groups, selectedId, selectedName, onSelect, onHoverPath }: { groups: DependencyGroup[]; selectedId: string; selectedName: string; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
   const dependencies = groups.flatMap((group) => group.dependencies);
   if (dependencies.length === 0) return null;
 
@@ -218,7 +236,7 @@ function DependencyGroups({ groups, selectedId, onSelect, onHoverPath }: { group
         {groups.map((group) => (
           <div key={group.repoName} className="link-group">
             <div className="impact-title">{group.repoName}</div>
-            <DependencyRows selectedId={selectedId} dependencies={group.dependencies} onSelect={onSelect} onHoverPath={onHoverPath} />
+            <DependencyRows selectedId={selectedId} selectedName={selectedName} dependencies={group.dependencies} onSelect={onSelect} onHoverPath={onHoverPath} />
           </div>
         ))}
       </div>
@@ -226,7 +244,7 @@ function DependencyGroups({ groups, selectedId, onSelect, onHoverPath }: { group
   );
 }
 
-function DependencyRows({ selectedId, dependencies, onSelect, onHoverPath }: { selectedId: string; dependencies: DependencyItem[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
+function DependencyRows({ selectedId, selectedName, dependencies, onSelect, onHoverPath }: { selectedId: string; selectedName: string; dependencies: DependencyItem[]; onSelect(id: string): void; onHoverPath(pathIds: string[][] | null): void }) {
   return (
     <ul className="impact-items">
       {dependencies.map((dependency) => (
@@ -241,13 +259,13 @@ function DependencyRows({ selectedId, dependencies, onSelect, onHoverPath }: { s
           >
             <span className="impact-link-main">
               <span className="link-name"><DottedName value={dependency.node.name} /></span>
-              <RouteBadge depth={dependency.depth} hasAlternativeRoute={dependency.hasAlternativeRoute} />
+              <RouteBadge routeKind={dependency.routeKind} />
             </span>
-            <span className="link-meta">
-              {dependency.node.type === "project" ? <ProjectKindLabels kinds={dependency.node.kinds} /> : packageLabel(dependency.node)}
-              <ReferenceVersionLabels versions={dependency.referenceVersions} />
-              {dependency.node.type === "package" ? <PackageVersionLabels versions={dependency.node.versions} /> : null}
-            </span>
+            <RowVersionMeta
+              dependencyVersions={dependency.referenceVersions}
+              selectedName={selectedName}
+              rowName={dependency.node.name}
+            />
           </button>
         </li>
       ))}
@@ -255,32 +273,41 @@ function DependencyRows({ selectedId, dependencies, onSelect, onHoverPath }: { s
   );
 }
 
-function SectionTitle({ title, count }: { title: string; count: number }) {
+function CollapsibleSection({ title, count, defaultOpen, children }: { title: string; count: number; defaultOpen: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+
   return (
-    <div className="section-title-row">
-      <h3>{title}</h3>
-      <span className="section-count">{count}</span>
-    </div>
+    <section className="popover-section">
+      <button className="section-title-row" type="button" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+        <span className="section-title-main">
+          <span className={`section-caret${open ? " open" : ""}`}>›</span>
+          <h3>{title}</h3>
+        </span>
+        <span className="section-count">{count}</span>
+      </button>
+      {open ? children : null}
+    </section>
   );
 }
 
-function RouteBadge({ depth, hasAlternativeRoute }: { depth: number; hasAlternativeRoute: boolean }) {
-  const route = depth <= 1 && hasAlternativeRoute ? "dual" : depth <= 1 ? "direct" : "indirect";
-  const help = route === "dual"
-    ? "Direct, and also reachable through another route. Retesting should consider both paths."
-    : route === "direct"
-      ? "Direct reference from the selected node or repo."
-      : "Reached through another project or package dependency.";
-  return <span className={`route-badge ${route} has-tooltip`} data-tooltip={help}>{route === "dual" ? "dual source" : route}</span>;
-}
+function RouteBadge({ routeKind }: { routeKind: RouteKind }) {
+  const labels: Record<RouteKind, string> = {
+    "direct-package": "Direct Package",
+    "direct-project": "Direct Project",
+    "indirect-package": "Indirect Package",
+    "indirect-project": "Indirect Project",
+  };
+  const help: Record<RouteKind, string> = {
+    "direct-package": "Direct NuGet package reference between these projects.",
+    "direct-project": "Direct ProjectReference between these projects.",
+    "indirect-package": "Reached through a NuGet package dependency chain.",
+    "indirect-project": "Reached through a chain of ProjectReferences with no NuGet package in the path.",
+  };
 
-function ProjectKindLabels({ kinds }: { kinds?: ProjectKind[] }) {
   return (
-    <span className="kind-labels">
-      {effectiveProjectKinds(kinds).map((kind) => (
-        <span key={kind} className={`node-label ${KIND_CLASS[kind]}`} title={KIND_LABELS[kind]}>{KIND_SHORT[kind]}</span>
-      ))}
-    </span>
+    <PortalTooltip text={help[routeKind]}>
+      <span className={`route-badge ${routeKind}`}>{labels[routeKind]}</span>
+    </PortalTooltip>
   );
 }
 
@@ -288,10 +315,26 @@ function flattenGroups(groups: ProjectGroup[]): ImpactProject[] {
   return groups.flatMap((group) => group.projects);
 }
 
-function splitProjectGroups(groups: ProjectGroup[], predicate: (impact: ImpactProject) => boolean): ProjectGroup[] {
+function filterProjectGroups(groups: ProjectGroup[], kindFilters: Record<ProjectKind, boolean>): ProjectGroup[] {
   return groups
-    .map((group) => ({ ...group, projects: group.projects.filter(predicate) }))
+    .map((group) => ({
+      ...group,
+      projects: group.projects.filter((impact) => projectPassesKindFilter(impact.project, kindFilters)),
+    }))
     .filter((group) => group.projects.length > 0);
+}
+
+function filterDependencyGroups(groups: DependencyGroup[], kindFilters: Record<ProjectKind, boolean>): DependencyGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      dependencies: group.dependencies.filter((dependency) => dependency.node.type !== "project" || projectPassesKindFilter(dependency.node, kindFilters)),
+    }))
+    .filter((group) => group.dependencies.length > 0);
+}
+
+function projectPassesKindFilter(project: ProjectNode, kindFilters: Record<ProjectKind, boolean>): boolean {
+  return effectiveProjectKinds(project.kinds).some((kind) => kindFilters[kind] !== false);
 }
 
 function pathIdsFor(paths: AnyGraphNode[][], fallbackId: string, selectedId: string): string[][] {
@@ -304,20 +347,20 @@ function pathIdsFor(paths: AnyGraphNode[][], fallbackId: string, selectedId: str
 }
 
 
-function nodeLabels(node: AnyGraphNode, producedByName?: string): string[] {
+function nodeLabels(node: AnyGraphNode, producedByName?: string, producedPackages?: PackageNode[]): string[] {
   if (node.type === "project") {
+    const packageVersionLabels = packageLabelsForProject(node, producedPackages);
     return [
       ...(node.sdk ? [node.sdk] : []),
       ...((node.tfms || []).length > 0 ? [node.tfms!.join(", ")] : []),
-      ...(node.packageId ? [`package ${node.packageId}`] : []),
-      ...(node.version ? [`v ${node.version}`] : []),
+      ...packageVersionLabels,
     ];
   }
 
   if (node.type === "package") {
     return [
       node.classification || "unknown",
-      ...((node.versions || []).length > 0 ? [`versions ${node.versions!.join(", ")}`] : ["version unknown"]),
+      ...((node.versions || []).length > 0 ? [`${node.versions!.length === 1 ? "Referenced version" : "Referenced versions"} ${node.versions!.join(", ")}`] : ["referenced version unknown"]),
       ...((node.versions || []).length > 1 ? ["version drift"] : []),
       ...(producedByName ? [`produced by ${producedByName}`] : []),
     ];
@@ -327,39 +370,24 @@ function nodeLabels(node: AnyGraphNode, producedByName?: string): string[] {
   return [];
 }
 
-function packageLabel(node: AnyGraphNode) {
-  if (node.type !== "package") return null;
-  return <span className="node-label">{node.classification || "unknown"}</span>;
+function packageLabelsForProject(project: ProjectNode, producedPackages?: PackageNode[]): string[] {
+  if (!project.packageId && (!producedPackages || producedPackages.length === 0)) return [];
+
+  const packages = producedPackages && producedPackages.length > 0
+    ? producedPackages
+    : [{ id: project.id, name: project.packageId!, versions: [], classification: "internal" } as PackageNode];
+  const includePackageName = packages.length > 1;
+
+  return packages.flatMap((pkg) => {
+    const v = pkg.versions || [];
+    if (v.length === 0) return [];
+    const label = v.length === 1 ? "Referenced version" : "Referenced versions";
+    return [`${includePackageName ? `${pkg.name} ` : ""}${label} ${v.join(", ")}`];
+  });
 }
 
-function PackageVersionLabels({ versions }: { versions?: string[] }) {
-  if (!versions || versions.length === 0) return <span className="node-label">version unknown</span>;
-
-  return (
-    <>
-      <span className="node-label">v {versions.join(", ")}</span>
-      {versions.length > 1 ? <span className="node-label version-drift">version drift</span> : null}
-    </>
-  );
-}
-
-function ReferenceVersionLabels({ versions }: { versions?: string[] }) {
-  if (!versions || versions.length === 0) return null;
-
-  return (
-    <>
-      {versions.map((version) => (
-        <span key={version} className={`node-label version-${versionKind(version)}`}>ref {versionKind(version)} {version}</span>
-      ))}
-    </>
-  );
-}
-
-function versionKind(version: string): "exact" | "range" | "floating" {
-  const trimmed = version.trim();
-  if (trimmed.includes("*") || /(^|[.-])[xX]($|[.-])/.test(trimmed)) return "floating";
-  if (/^[[(].*[\])]$/.test(trimmed) || trimmed.includes(",")) return "range";
-  return "exact";
+function formatVersions(versions: string[]): string {
+  return versions.map((version) => `v${version}`).join(", ");
 }
 
 function DottedName({ value }: { value: string }) {

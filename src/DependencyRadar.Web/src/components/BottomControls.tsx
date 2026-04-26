@@ -1,4 +1,5 @@
 import type { LayoutId } from "../graph/cytoscapeModel";
+import { PortalTooltip } from "./PortalTooltip";
 
 const LAYOUT_OPTIONS: Array<{ id: LayoutId; label: string; note: string }> = [
   { id: "dagre",      label: "Dependency Paths", note: "Arrange projects left-to-right so dependency direction is easier to trace." },
@@ -9,55 +10,77 @@ const LAYOUT_OPTIONS: Array<{ id: LayoutId; label: string; note: string }> = [
 interface BottomControlsProps {
   layout: LayoutId;
   nodeScale: number;
+  groupByRepo: boolean;
   setLayout(layout: LayoutId): void;
   setNodeScale(update: (current: number) => number): void;
+  setGroupByRepo(value: boolean): void;
+  onHelpOpen(): void;
 }
 
 const MIN_NODE_SCALE = 0.5;
 const MAX_NODE_SCALE = 1.5;
 const NODE_SCALE_STEP = 0.25;
 
-export function BottomControls({ layout, nodeScale, setLayout, setNodeScale }: BottomControlsProps) {
+export function BottomControls({ layout, nodeScale, groupByRepo, setLayout, setNodeScale, setGroupByRepo, onHelpOpen }: BottomControlsProps) {
   const decreaseDisabled = nodeScale <= MIN_NODE_SCALE;
   const increaseDisabled = nodeScale >= MAX_NODE_SCALE;
 
   return (
     <div className="bottom-right-dock">
+      <PortalTooltip text="Key, features, and license information.">
+        <button className="repo-box-toggle dock-panel" type="button" onClick={onHelpOpen}>
+          Help
+        </button>
+      </PortalTooltip>
+      <PortalTooltip text="Show or hide repository grouping boxes on the graph.">
+        <button
+          className={`repo-box-toggle dock-panel${groupByRepo ? " active" : ""}`}
+          type="button"
+          aria-pressed={groupByRepo}
+          onClick={() => setGroupByRepo(!groupByRepo)}
+        >
+          Repositories
+        </button>
+      </PortalTooltip>
       <div className="scale-controls dock-panel" aria-label="Node scale controls">
-        <button
-          className="scale-button has-tooltip"
-          type="button"
-          aria-label="Make graph nodes smaller"
-          data-tooltip="Make graph nodes smaller without changing filters or selection."
-          disabled={decreaseDisabled}
-          onClick={() => setNodeScale((current) => Math.max(MIN_NODE_SCALE, current - NODE_SCALE_STEP))}
-        >
-          -
-        </button>
-        <span className="scale-value has-tooltip" data-tooltip="Current graph node scale">{Math.round(nodeScale * 100)}%</span>
-        <button
-          className="scale-button has-tooltip"
-          type="button"
-          aria-label="Make graph nodes larger"
-          data-tooltip="Make graph nodes larger without changing filters or selection."
-          disabled={increaseDisabled}
-          onClick={() => setNodeScale((current) => Math.min(MAX_NODE_SCALE, current + NODE_SCALE_STEP))}
-        >
-          +
-        </button>
+        <PortalTooltip text="Make graph nodes smaller without changing filters or selection.">
+          <button
+            className="scale-button"
+            type="button"
+            aria-label="Make graph nodes smaller"
+            disabled={decreaseDisabled}
+            onClick={() => setNodeScale((current) => Math.max(MIN_NODE_SCALE, current - NODE_SCALE_STEP))}
+          >
+            -
+          </button>
+        </PortalTooltip>
+        <PortalTooltip text="Current graph node scale">
+          <span className="scale-value">{Math.round(nodeScale * 100)}%</span>
+        </PortalTooltip>
+        <PortalTooltip text="Make graph nodes larger without changing filters or selection.">
+          <button
+            className="scale-button"
+            type="button"
+            aria-label="Make graph nodes larger"
+            disabled={increaseDisabled}
+            onClick={() => setNodeScale((current) => Math.min(MAX_NODE_SCALE, current + NODE_SCALE_STEP))}
+          >
+            +
+          </button>
+        </PortalTooltip>
       </div>
       <div className="layout-toggle dock-panel">
         {LAYOUT_OPTIONS.map((option) => (
-          <button
-            key={option.id}
-            className={`layout-segment${layout === option.id ? " active" : ""}`}
-            type="button"
-            aria-label={option.label}
-            data-tooltip={option.note}
-            onClick={() => setLayout(option.id)}
-          >
-            {option.label}
-          </button>
+          <PortalTooltip key={option.id} text={option.note}>
+            <button
+              className={`layout-segment${layout === option.id ? " active" : ""}`}
+              type="button"
+              aria-label={option.label}
+              onClick={() => setLayout(option.id)}
+            >
+              {option.label}
+            </button>
+          </PortalTooltip>
         ))}
       </div>
     </div>

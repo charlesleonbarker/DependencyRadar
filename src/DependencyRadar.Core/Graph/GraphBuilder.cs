@@ -181,6 +181,7 @@ internal sealed class GraphBuilder
         var id = IdFor("repo", repoPath);
         var name = Path.GetFileName(repoPath.TrimEnd(Path.DirectorySeparatorChar));
         if (string.IsNullOrEmpty(name)) name = repoPath;
+        name = StripPrefixes(name);
         var (branch, origin) = ReadGitMeta(repoPath);
         _repos[repoPath] = new RepoNode(id, name, repoPath, branch, origin);
     }

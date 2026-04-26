@@ -8,7 +8,7 @@ export const KIND_LABELS: Record<ProjectKind, string> = {
   web: "Microsoft.NET.Sdk.Web projects",
   blazor: "Blazor WebAssembly projects",
   service: "Worker SDK or hosted-service projects",
-  "nuget-producing": "Packable NuGet projects",
+  "nuget-producing": "NuGet package projects",
 };
 
 export const KIND_NOTES: Record<ProjectKind, string> = {
@@ -17,7 +17,7 @@ export const KIND_NOTES: Record<ProjectKind, string> = {
   web: "Projects using Microsoft.NET.Sdk.Web.",
   blazor: "Projects using a Blazor SDK or ASP.NET Core Components package.",
   service: "Projects using the Worker SDK or Microsoft.Extensions.Hosting.",
-  "nuget-producing": "Packable projects with a NuGet package ID.",
+  "nuget-producing": "Projects that provide a NuGet package ID.",
 };
 
 export const KIND_SHORT: Record<ProjectKind, string> = {
@@ -26,7 +26,7 @@ export const KIND_SHORT: Record<ProjectKind, string> = {
   web: "Web SDK",
   blazor: "Blazor",
   service: "Worker",
-  "nuget-producing": "Packable",
+  "nuget-producing": "NuGet package",
 };
 
 export const KIND_CLASS: Record<ProjectKind, string> = {

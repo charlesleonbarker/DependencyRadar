@@ -164,6 +164,26 @@ public class GraphBuilderTests
     }
 
     [Fact]
+    public void Applies_name_prefixes_to_repo_display_names()
+    {
+        using var ws = new TestFixtureWorkspace();
+        var repo = ws.CreateRepo("Meridian.Commerce.Orders");
+        ws.WriteProject(repo, "src/Meridian.Commerce.Orders.Api/Meridian.Commerce.Orders.Api.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk.Web">
+              <PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup>
+            </Project>
+            """);
+
+        var discovered = Discovery.Discover(ws.Root, Array.Empty<string>(), _ => { });
+        var builder = new GraphBuilder(new[] { "Meridian." });
+        builder.AddDiscovered(discovered);
+        var graph = builder.Build(ws.Root);
+
+        var repoNode = Assert.Single(graph.Repos);
+        Assert.Equal("Commerce.Orders", repoNode.Name);
+    }
+
+    [Fact]
     public void Reverse_bfs_from_internal_package_reaches_consumer_and_its_tests()
     {
         using var ws = new TestFixtureWorkspace();

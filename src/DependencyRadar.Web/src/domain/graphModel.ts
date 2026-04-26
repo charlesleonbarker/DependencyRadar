@@ -16,7 +16,11 @@ export interface ImpactProject {
   path: AnyGraphNode[];
   paths: AnyGraphNode[][];
   hasAlternativeRoute: boolean;
+  routeKind: RouteKind;
+  referenceVersions?: string[];
 }
+
+export type RouteKind = "direct-project" | "direct-package" | "indirect-package" | "indirect-project";
 
 export interface DependencyItem {
   node: AnyGraphNode;
@@ -24,6 +28,7 @@ export interface DependencyItem {
   path: AnyGraphNode[];
   paths: AnyGraphNode[][];
   hasAlternativeRoute: boolean;
+  routeKind: RouteKind;
   referenceVersions?: string[];
 }
 
@@ -44,6 +49,7 @@ export interface SelectionDetails {
   affectedProjectCount: number;
   dependencyCount: number;
   producedByProject?: ProjectNode;
+  producedPackages?: PackageNode[];
   repoProjects?: ProjectNode[];
   consumers: ProjectGroup[];
   internalDependencies: DependencyGroup[];
@@ -59,6 +65,7 @@ export interface GraphModel {
   projectsById: Record<string, ProjectNode>;
   projectsByRepo: Record<string, ProjectNode[]>;
   collapsedPackageTargets: Record<string, string>;
+  producedPackagesByProject: Record<string, PackageNode[]>;
   suggestions: SearchSuggestion[];
   reverseReach(startId: string): string[];
   forwardReach(startId: string): string[];
@@ -82,6 +89,7 @@ export function buildModel(graph: DependencyRadarGraph): GraphModel {
   const projectsById: GraphModel["projectsById"] = {};
   const projectsByRepo: GraphModel["projectsByRepo"] = {};
   const collapsedPackageTargets: GraphModel["collapsedPackageTargets"] = {};
+  const producedPackagesByProject: GraphModel["producedPackagesByProject"] = {};
   const reverseAdj: Record<string, GraphEdge[]> = {};
   const forwardAdj: Record<string, GraphEdge[]> = {};
 
@@ -99,7 +107,10 @@ export function buildModel(graph: DependencyRadarGraph): GraphModel {
   });
   graph.packages.forEach((pkg) => {
     nodesById[pkg.id] = { ...pkg, type: "package" };
-    if (pkg.producedBy) collapsedPackageTargets[pkg.id] = pkg.producedBy;
+    if (pkg.producedBy) {
+      collapsedPackageTargets[pkg.id] = pkg.producedBy;
+      (producedPackagesByProject[pkg.producedBy] ||= []).push(pkg);
+    }
   });
   graph.edges.forEach((edge) => {
     (reverseAdj[edge.to] ||= []).push(edge);
@@ -275,6 +286,7 @@ export function buildModel(graph: DependencyRadarGraph): GraphModel {
     projectsById,
     projectsByRepo,
     collapsedPackageTargets,
+    producedPackagesByProject,
     suggestions,
     reverseReach: (startId) => nodesById[startId]?.type === "repo" ? repoReach(startId, reverseAdj, "from", false) : compositeReach(startId, reverseAdj, "from"),
     forwardReach: (startId) => nodesById[startId]?.type === "repo" ? repoReach(startId, forwardAdj, "to", true) : compositeReach(startId, forwardAdj, "to"),
@@ -319,12 +331,20 @@ export function describeSelection(model: GraphModel, selectionId: string | null)
       const depth = Math.max(0, pathIds.length - 1);
       const rawDepth = Math.max(0, rawPathIds.length - 1);
       const paths = routePaths.all.map((route) => compressInternalPackagePath(model, route).map((pathId) => model.nodesById[pathId]).filter(Boolean));
+      const versionContextPackageIds = packageIdsForVersionContext(model, traversalStartIds);
+      const referenceVersions = packageReferenceVersionsFromReachableProjects(
+        model.graph.edges,
+        new Set([id, ...model.forwardReach(id)]),
+        versionContextPackageIds,
+      ) || packageReferenceVersionsOnPaths(model.graph.edges, routePaths.all, versionContextPackageIds);
       return {
         project,
         depth,
         path: pathIds.map((pathId) => model.nodesById[pathId]).filter(Boolean),
         paths,
         hasAlternativeRoute: paths.length > 1 || traversalStartIds.some((start) => model.hasAlternativeImpactRoute(start, id, rawDepth)),
+        routeKind: routeKindForPath(model.graph.edges, rawPathIds),
+        ...(referenceVersions ? { referenceVersions } : {}),
       };
     })
     .filter((project): project is ImpactProject => Boolean(project));
@@ -338,6 +358,7 @@ export function describeSelection(model: GraphModel, selectionId: string | null)
     affectedProjectCount: impactedProjects.length,
     dependencyCount: descendants.length,
     producedByProject: node.type === "package" && node.producedBy ? model.projectsById[node.producedBy] : undefined,
+    producedPackages: node.type === "project" ? model.producedPackagesByProject[node.id] : undefined,
     consumers: groupProjectsByRepo(impactedProjects, model.reposById),
     internalDependencies: groupDependenciesByRepo(
       dependencies.filter((dependency) => dependency.node.type === "project" || isInternalPackage(dependency.node)),
@@ -417,17 +438,26 @@ function impactFromStarts(model: GraphModel, starts: string[], targetId: string)
   const depth = Math.max(0, pathIds.length - 1);
   const rawDepth = Math.max(0, rawPathIds.length - 1);
   const paths = routePaths.all.map((route) => compressInternalPackagePath(model, route).map((pathId) => model.nodesById[pathId]).filter(Boolean));
+  const versionContextPackageIds = packageIdsForVersionContext(model, starts);
+  const referenceVersions = packageReferenceVersionsFromReachableProjects(
+    model.graph.edges,
+    new Set([targetId, ...model.forwardReach(targetId)]),
+    versionContextPackageIds,
+  ) || packageReferenceVersionsOnPaths(model.graph.edges, routePaths.all, versionContextPackageIds);
   return {
     project,
     depth,
     path: pathIds.map((pathId) => model.nodesById[pathId]).filter(Boolean),
     paths,
     hasAlternativeRoute: paths.length > 1 || starts.some((start) => model.hasAlternativeImpactRoute(start, targetId, rawDepth)),
+    routeKind: routeKindForPath(model.graph.edges, rawPathIds),
+    ...(referenceVersions ? { referenceVersions } : {}),
   };
 }
 
 function dependencyItemsFromStarts(model: GraphModel, starts: string[], descendants: string[]): DependencyItem[] {
   const items = new Map<string, DependencyItem>();
+  const reachableIds = new Set([...starts, ...descendants]);
 
   for (const id of descendants) {
     const rawNode = model.nodesById[id];
@@ -450,13 +480,16 @@ function dependencyItemsFromStarts(model: GraphModel, starts: string[], descenda
     const depth = Math.max(0, pathIds.length - 1);
     const rawDepth = Math.max(0, rawPathIds.length - 1);
     const paths = routePaths.all.map((route) => compressInternalPackagePath(model, route).map((pathId) => model.nodesById[pathId]).filter(Boolean));
+    const targetPackageIds = packageIdsForDependencyTarget(model, rawNode, node);
     const item: DependencyItem = {
       node,
       depth,
       path: pathIds.map((pathId) => model.nodesById[pathId]).filter(Boolean),
       paths,
       hasAlternativeRoute: paths.length > 1 || starts.some((start) => model.hasAlternativeDependencyRoute(start, targetId, rawDepth)),
-      referenceVersions: packageReferenceVersionsOnPath(model.graph.edges, rawPathIds),
+      routeKind: routeKindForPath(model.graph.edges, rawPathIds),
+      referenceVersions: packageReferenceVersionsFromReachableProjects(model.graph.edges, reachableIds, targetPackageIds)
+        || packageReferenceVersionsOnPaths(model.graph.edges, routePaths.all, targetPackageIds),
     };
 
     const current = items.get(node.id);
@@ -474,6 +507,7 @@ function dependencyItemsFromStarts(model: GraphModel, starts: string[], descenda
         path: minPath,
         paths: mergedPaths,
         hasAlternativeRoute: current.hasAlternativeRoute || item.hasAlternativeRoute || mergedPaths.length > 1,
+        routeKind: routePriority(item) > routePriority(current) ? item.routeKind : current.routeKind,
         referenceVersions: mergeVersions(current.referenceVersions, item.referenceVersions),
       });
     }
@@ -552,24 +586,86 @@ function mergeVersions(left?: string[], right?: string[]): string[] | undefined 
   return merged.length > 0 ? merged : undefined;
 }
 
-function packageReferenceVersionsOnPath(edges: GraphEdge[], pathIds: string[]): string[] | undefined {
-  if (pathIds.length < 2) return undefined;
+function packageReferenceVersionsOnPaths(edges: GraphEdge[], paths: string[][], packageIds?: string[]): string[] | undefined {
+  if (packageIds && packageIds.length === 0) return undefined;
 
   const versions: string[] = [];
-  for (let index = 0; index < pathIds.length - 1; index += 1) {
-    const from = pathIds[index];
-    const to = pathIds[index + 1];
-    edges
-      .filter((edge) => edge.from === from && edge.to === to && edge.kind === "packageRef" && edge.version)
-      .forEach((edge) => versions.push(edge.version!));
+  const packageSet = packageIds && packageIds.length > 0 ? new Set(packageIds) : undefined;
+
+  for (const pathIds of paths) {
+    if (pathIds.length < 2) continue;
+
+    for (let index = 0; index < pathIds.length - 1; index += 1) {
+      const from = pathIds[index];
+      const to = pathIds[index + 1];
+      edges
+        .filter((edge) =>
+          edge.kind === "packageRef"
+          && edge.version
+          && (!packageSet || packageSet.has(edge.from) || packageSet.has(edge.to))
+          && ((edge.from === from && edge.to === to) || (edge.from === to && edge.to === from)),
+        )
+        .forEach((edge) => versions.push(edge.version!));
+    }
   }
 
   return mergeVersions(versions);
 }
 
+function packageIdsForVersionContext(model: GraphModel, startIds: string[]): string[] {
+  return unique(startIds.flatMap((startId) => {
+    const start = model.nodesById[startId];
+    if (start?.type === "package") return [start.id];
+    if (start?.type === "project") return (model.producedPackagesByProject[start.id] || []).map((pkg) => pkg.id);
+    return [];
+  }));
+}
+
+function packageIdsForDependencyTarget(model: GraphModel, rawNode: AnyGraphNode, node: AnyGraphNode): string[] {
+  if (rawNode.type === "package") return [rawNode.id];
+  if (node.type === "package") return [node.id];
+  if (node.type === "project") return (model.producedPackagesByProject[node.id] || []).map((pkg) => pkg.id);
+  return [];
+}
+
+function packageReferenceVersionsFromReachableProjects(edges: GraphEdge[], reachableIds: Set<string>, packageIds: string[]): string[] | undefined {
+  if (packageIds.length === 0) return undefined;
+
+  const packageSet = new Set(packageIds);
+  const versions = edges
+    .filter((edge) =>
+      edge.kind === "packageRef"
+      && edge.version
+      && reachableIds.has(edge.from)
+      && packageSet.has(edge.to),
+    )
+    .map((edge) => edge.version!);
+
+  return mergeVersions(versions);
+}
+
+function routeKindForPath(edges: GraphEdge[], pathIds: string[]): RouteKind {
+  const hasPackageRef = pathHasEdgeKind(edges, pathIds, "packageRef");
+  if (pathIds.length <= 2 && !hasPackageRef) return "direct-project";
+  if (pathIds.length <= 3 && hasPackageRef) return "direct-package";
+  if (!hasPackageRef) return "indirect-project";
+  return "indirect-package";
+}
+
+function pathHasEdgeKind(edges: GraphEdge[], pathIds: string[], kind: GraphEdge["kind"]): boolean {
+  for (let index = 0; index < pathIds.length - 1; index += 1) {
+    const from = pathIds[index];
+    const to = pathIds[index + 1];
+    if (edges.some((edge) => edge.kind === kind && ((edge.from === from && edge.to === to) || (edge.from === to && edge.to === from)))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function routePriority(item: DependencyItem): number {
-  if (item.depth <= 1 && item.hasAlternativeRoute) return 3;
-  if (item.depth <= 1) return 2;
+  if (item.routeKind === "direct-package") return 3;
+  if (item.routeKind === "direct-project") return 2;
   return 1;
 }
 

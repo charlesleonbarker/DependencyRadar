@@ -38,9 +38,10 @@ export function App() {
   const [error, setError] = useState("");
   const [selectionId, setSelectionId] = useState<string | null>(null);
   const [hoverPathIds, setHoverPathIds] = useState<string[][] | null>(null);
-  const [layout, setLayout] = useState<LayoutId>("dagre");
+  const [layout, setLayout] = useState<LayoutId>("fcose");
   const [layoutRunKey, setLayoutRunKey] = useState(0);
   const [nodeScale, setNodeScale] = useState(1);
+  const [groupByRepo, setGroupByRepo] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -81,6 +82,9 @@ export function App() {
   }, [model]);
 
   const selectNode = useCallback((id: string | null) => {
+    if (id && model?.nodesById[id]?.type === "repo") {
+      setGroupByRepo(true);
+    }
     setSelectionId(id);
     const nextUrl = selectionUrl(id, model);
     if (nextUrl !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
@@ -182,6 +186,7 @@ export function App() {
           <SelectionPopover
             selection={selection}
             showExternal={showPackages}
+            kindFilters={kindFilters}
             onClose={closeSelection}
             onSelect={selectNode}
             onHoverPath={setHoverPathIds}
@@ -190,11 +195,6 @@ export function App() {
 
         <main className="canvas">
           <div className="canvas-inner">
-            <div className="top-info-dock">
-              <button className="ghost-button top-info-button" type="button" title="Help, key, monitor, and license information" onClick={() => setHelpOpen(true)}>
-                Info
-              </button>
-            </div>
             <div className="canvas-stage">
               <GraphCanvas
                 graph={graph}
@@ -205,16 +205,16 @@ export function App() {
                 onSelectionChange={selectNode}
                 layout={layout}
                 layoutRunKey={layoutRunKey}
-                groupByRepo
+                groupByRepo={groupByRepo}
                 filterState={filterState}
                 searchText={searchText}
                 status={status}
                 nodeScale={nodeScale}
-                leftInset={selection ? 560 : 0}
+                leftInset={selection ? 664 : 0}
               />
             </div>
 
-            <BottomControls layout={layout} nodeScale={nodeScale} setLayout={chooseLayout} setNodeScale={setNodeScale} />
+            <BottomControls layout={layout} nodeScale={nodeScale} groupByRepo={groupByRepo} setLayout={chooseLayout} setNodeScale={setNodeScale} setGroupByRepo={setGroupByRepo} onHelpOpen={() => setHelpOpen(true)} />
             {error ? <div className="map-status map-status-error"><strong>Frontend error</strong><span>{error}</span></div> : null}
           </div>
         </main>

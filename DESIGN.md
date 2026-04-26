@@ -9,7 +9,7 @@ Dependency Radar is split into three components:
    ASP.NET Core backend that watches configured roots, debounces file changes, rescans via `DependencyRadar.Core`, keeps the latest graph in memory, and exposes it over HTTP.
 
 3. `DependencyRadar.Web`
-   React + Cytoscape frontend that runs separately from the backend and consumes the HTTP API.
+   React + Cytoscape frontend. It runs separately from the backend in development. The Docker image builds it and serves the static output from `DependencyRadar.Service` so UI and API share one port.
 
 ## Architecture
 
@@ -61,7 +61,7 @@ Source folders, namespaces, assemblies, configuration, deployment labels, and us
 - Keep the latest graph JSON and summary in memory.
 - Expose scan state and graph data over HTTP.
 - Emit SSE updates when the graph version changes.
-- Optionally emit display-only shortened paths by removing configured `DisplayPathPrefixes`.
+- Apply display-only name prefix stripping from configured `NamePrefixes` for repo, solution, and project labels. Stable IDs and raw paths are unchanged.
 
 Current API:
 
@@ -78,9 +78,10 @@ The frontend should rely on watcher-driven scans for normal use. `POST /api/resc
 - Subscribe to `GET /api/updates`
 - Rehydrate the graph into lookup maps and adjacency lists in the browser
 - Render the graph with Cytoscape
-- Maintain search, filters, layout, focus, and selection state
+- Maintain search, filters, layout, repo grouping, focus, and selection state
 - Compute blast radius, affected tests, and deployables client-side
-- Surface direct vs indirect consumers/dependencies and package version drift from the local graph data.
+- Surface relationship categories, consumers/dependencies, and locally observed NuGet package versions from the graph data.
+- Keep the Impact Panel synchronized with graph filters.
 
 `DependencyRadar.Web` should stay thin on domain logic. Graph semantics remain owned by the shared model and API contract.
 
@@ -92,7 +93,7 @@ The frontend should rely on watcher-driven scans for normal use. `POST /api/resc
 |-----------|-------------------------|------------------------------------------------------------------------|
 | Repo      | folder path             | name, path                                                             |
 | Solution  | `.sln` absolute path    | name, repo                                                             |
-| Project   | `.csproj` absolute path | name, assembly name, SDK, TFMs, classification, package ID if packable |
+| Project   | `.csproj` absolute path | name, assembly name, SDK, TFMs, classification, NuGet package ID if one is produced |
 | Package   | package ID              | versions seen, classification, produced-by project if internal         |
 
 Repo, solution, and project JSON may include `displayPath` alongside the raw `path`. `displayPath` is presentation-only and must not be used for graph identity or file IO.
@@ -106,7 +107,7 @@ Derived locally from `.csproj` content:
 - `Microsoft.NET.Sdk.Web` projects
 - Blazor WebAssembly projects
 - Worker SDK or hosted-service projects
-- packable NuGet projects
+- NuGet package-producing projects
 
 A project can hold multiple classifications.
 
@@ -161,14 +162,29 @@ Selecting a node should:
 - highlight upstream blast radius
 - highlight downstream dependencies
 - show compact, recognisable labels for the selected node instead of a bulky details table
-- list consumers grouped by repo
-- list internal dependencies grouped by repo
-- list external or unknown package dependencies at the bottom only when the package filter is enabled
-- label relationships consistently as `direct`, `indirect`, or `dual source`
-- show direct and indirect sections separately where that improves scanability
-- highlight packages where more than one local version is seen
+- show an Impact Panel with collapsible sections:
+  - Affected Tests
+  - Affected Deployments
+  - All Consumers
+  - All Dependencies
+  - External packages, only when external package visibility is enabled
+- keep Affected Tests and Affected Deployments expanded by default
+- list consumers and dependencies grouped by repo
+- label relationships as `Direct Project`, `Direct Package`, or `Indirect Package`
+- show consumed package versions on relationship rows, with tooltips explaining which project consumes which version
+- show all locally consumed versions for a selected NuGet package-producing project in its header
+- keep Impact Panel project lists consistent with active graph type filters
 
-Internal NuGet package dependencies should be presented as the producer project when the package can be resolved locally. For sidebar depth, path labels, and hover paths, treat the internal package and its producing project as the same dependency target; do not show an extra "via package" hop or make the package and producer look like duplicate primary dependencies. Keep the referenced package version visible where the direct package-reference edge provides it.
+Internal NuGet package dependencies should be presented as the producer project when the package can be resolved locally. For graph nodes, Impact Panel depth, path labels, search aliases, and hover paths, treat the internal package and its producing project as the same dependency target; do not show an extra "via package" hop or make the package and producer look like duplicate primary dependencies. Keep referenced package versions visible where package-reference edges provide them.
+
+## Frontend interaction model
+
+- Search opens on focus and shows all suggestions before the user types.
+- Search suggestions include repos, projects, and external/unresolved packages. Internal package IDs appear as aliases for their producing project.
+- Project type, repository, and external package filters affect the graph. Project type filters also affect Impact Panel lists.
+- The default graph layout is Cluster Map (`fcose`). Dependency Paths (`dagre`) and Most Referenced (`concentric`) remain available.
+- The Repositories toggle shows or hides repo grouping boxes. Selecting a repo turns grouping back on.
+- Graph control tooltips render through a portal so dock/panel overflow does not clip them.
 
 ## Storage
 
