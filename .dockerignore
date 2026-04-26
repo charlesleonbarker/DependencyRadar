@@ -5,5 +5,5 @@
 **/bin
 **/obj
 **/node_modules
-src/Depmap.Web/dist
+src/DependencyRadar.Web/dist
 **/.DS_Store

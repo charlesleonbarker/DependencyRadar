@@ -4,7 +4,7 @@ obj/
 
 # Frontend build output
 node_modules/
-src/Depmap.Web/dist/
+src/DependencyRadar.Web/dist/
 
 # Scanner output artifacts
 depmap.html

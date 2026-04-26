@@ -40,6 +40,11 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+          env:
+            - name: DependencyRadar__Roots__0
+              value: /repos
+            - name: DependencyRadar__NamePrefixes__0
+              value: Meridian.
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

@@ -17,18 +17,20 @@ RUN dotnet restore src/DependencyRadar.Service/DependencyRadar.Service.csproj
 COPY . .
 RUN dotnet publish src/DependencyRadar.Service/DependencyRadar.Service.csproj -c Release -o /app/publish /p:UseAppHost=false
 
-# Stage 3: minimal Alpine runtime — API + frontend on port 8080
+# Stage 3: minimal Alpine runtime serving the API and frontend on port 8080
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
 WORKDIR /app
 
-RUN addgroup -S -g 1001 dependencyradar && adduser -S -u 1001 -G dependencyradar dependencyradar
+RUN addgroup -S -g 1001 dependencyradar \
+ && adduser -S -u 1001 -G dependencyradar dependencyradar \
+ && mkdir -p /repos
 
 COPY --from=dotnet-build /app/publish ./
-COPY --from=node-build /web/dist ./wwwroot
+COPY --from=node-build /web/dist/ ./wwwroot/
 COPY test/fixtures /fixtures
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
- && chown -R dependencyradar:dependencyradar /app /fixtures
+ && chown -R dependencyradar:dependencyradar /app /fixtures /repos
 
 ENV ASPNETCORE_URLS=http://+:8080
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1

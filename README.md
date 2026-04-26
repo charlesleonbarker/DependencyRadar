@@ -95,7 +95,7 @@ Shared run configs are in [.run](/Users/charles/Documents/Claude/Projects/depend
 
 ## Docker
 
-The checked-in [Dockerfile](/Users/charles/Documents/Claude/Projects/dependancyMap/Dockerfile) builds the backend only.
+The checked-in [Dockerfile](/Users/charles/Documents/Claude/Projects/dependancyMap/Dockerfile) builds the React frontend, publishes the .NET backend, and serves both from the same container on port `8080`.
 
 Build:
 
@@ -109,6 +109,8 @@ Run:
 docker run --rm -p 8080:8080 -v /path/to/repos:/repos dependency-radar
 ```
 
+Open `http://localhost:8080` for the UI. The API is served from the same origin under `/api`.
+
 If you want a different mount point, override `DependencyRadar__Roots__0`:
 
 ```bash
@@ -118,7 +120,7 @@ docker run --rm -p 8080:8080 \
   dependency-radar
 ```
 
-The frontend is not served by this container. Point your separately running frontend at `http://localhost:8080`.
+If `/repos` is empty or not mounted, the container scans the bundled fixture estate.
 
 ## Repository layout
 
