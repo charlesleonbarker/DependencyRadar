@@ -70,22 +70,25 @@ export function HelpContent({ status, counts }: HelpContentProps) {
           <li><strong>All Consumers</strong> lists every project that depends on the selected node, directly or indirectly.</li>
           <li><strong>All Dependencies</strong> lists internal projects or locally resolved NuGet packages used by the selected node.</li>
           <li><strong>External packages</strong> lists unresolved or external NuGet packages when external package visibility is enabled.</li>
-          <li><strong>Direct Project</strong> means a ProjectReference. <strong>Direct Package</strong> means a NuGet package reference. <strong>Indirect Package</strong> means the route goes through another project or package.</li>
-          <li>Version pills trace NuGet package versions on a relationship. Hover a version pill to see which project is consuming which package version.</li>
+          <li><strong>Direct Project</strong> means a ProjectReference. <strong>Indirect Project</strong> means a chain of ProjectReferences with no NuGet package edge in the route.</li>
+          <li><strong>Direct Package</strong> means a NuGet package reference. <strong>Indirect Package</strong> means the route goes through at least one NuGet package reference.</li>
+          <li><strong>Referenced version</strong> on the selected node lists the NuGet package versions found in local consumers. If more than one version is referenced, the panel shows <strong>Referenced versions</strong> with the full comma-separated set.</li>
+          <li><strong>refs vX</strong> appears on consumer rows. It means that row, or a project underneath it in the impact path, references the selected NuGet package version.</li>
+          <li><strong>using vX</strong> appears on dependency rows. It means the selected node, or a project underneath it in the dependency path, uses that dependency package version.</li>
+          <li>Hover a version pill to see which side of the relationship the version belongs to.</li>
         </ul>
       </section>
 
       <section className="modal-section">
         <h3>Monitor</h3>
         <div className="monitor-line">
-          <span className={`status-chip ${status?.state || "idle"}`}>{status?.state || "idle"}</span>
           <MonitorStat label="Repos" value={counts.repoCount || 0} />
           <MonitorStat label="Projects" value={counts.projectCount || 0} />
           <MonitorStat label="Packages" value={counts.packageCount || 0} />
           <MonitorStat label="Edges" value={counts.edgeCount || 0} />
           <span className="monitor-scan">Last scan: {formatDate(status?.lastScanAt)}</span>
         </div>
-        <p className="legend-note">The backend watches configured repo roots and rescans automatically after file changes (debounced). The graph updates in the browser via a live event stream.</p>
+        <p className="legend-note">The backend watches configured repo roots and rescans automatically after file changes. The graph updates in the browser via a live event stream.</p>
         {status?.lastError ? <p className="monitor-error">{status.lastError}</p> : null}
       </section>
 
@@ -103,6 +106,9 @@ export function HelpContent({ status, counts }: HelpContentProps) {
           <Credit name="Lodash" license="MIT" credit="Copyright OpenJS Foundation and other contributors." />
           <Credit name="cose-base" license="MIT" credit="Copyright (c) 2019-present, iVis@Bilkent." />
           <Credit name="layout-base" license="MIT" credit="Copyright (c) 2019 iVis@Bilkent." />
+          <Credit name="Scheduler" license="MIT" credit="Copyright (c) Facebook, Inc. and its affiliates." />
+          <Credit name="loose-envify" license="MIT" credit="Copyright (c) 2015 Andres Suarez." />
+          <Credit name="js-tokens" license="MIT" credit="Copyright (c) 2014-2018 Simon Lydell." />
         </div>
       </section>
     </>
