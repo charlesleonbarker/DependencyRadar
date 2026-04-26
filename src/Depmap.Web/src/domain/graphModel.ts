@@ -235,7 +235,7 @@ export function buildModel(graph: DepmapGraph): GraphModel {
     ...graph.repos.map((repo) => ({
       id: repo.id,
       label: repo.name,
-      sublabel: repo.displayPath || repo.path,
+      sublabel: repo.path,
       type: "repo" as const,
     })),
     ...graph.projects.map((project) => ({

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import cytoscape from "cytoscape";
 import cytoscapeDagre from "cytoscape-dagre";
 import cytoscapeFcose from "cytoscape-fcose";
@@ -56,7 +56,6 @@ export function GraphCanvas({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
   const modelRef = useRef<GraphModel | null>(model);
-  const [edgeTooltip, setEdgeTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   useEffect(() => {
     modelRef.current = model;
@@ -80,20 +79,6 @@ export function GraphCanvas({
     cy.on("tap", (event) => {
       if (event.target === cy) onSelectionChange(null);
     });
-    cy.on("mouseover", "edge", (event) => {
-      const text = edgeTooltipText(event.target, modelRef.current);
-      if (!text) return;
-      setEdgeTooltip({
-        x: event.renderedPosition.x,
-        y: event.renderedPosition.y,
-        text,
-      });
-    });
-    cy.on("mousemove", "edge", (event) => {
-      setEdgeTooltip((current) => current ? { ...current, x: event.renderedPosition.x, y: event.renderedPosition.y } : current);
-    });
-    cy.on("mouseout", "edge", () => setEdgeTooltip(null));
-
     cy.edges().unselectify();
     cyRef.current = cy;
     cy.on("zoom", () => scaleFonts(cy));
@@ -153,35 +138,6 @@ export function GraphCanvas({
     );
   }
 
-  return (
-    <>
-      <div ref={containerRef} className="graph-surface" />
-      {edgeTooltip ? (
-        <div className="graph-tooltip" style={{ left: edgeTooltip.x, top: edgeTooltip.y }}>
-          {edgeTooltip.text}
-        </div>
-      ) : null}
-    </>
-  );
+  return <div ref={containerRef} className="graph-surface" />;
 }
 
-function edgeTooltipText(edge: cytoscape.EdgeSingular, model: GraphModel | null): string {
-  const kind = String(edge.data("kind") || "");
-  const sourceName = model?.nodesById[edge.source().id()]?.name || edge.source().data("label") || "Source";
-  const targetName = model?.nodesById[edge.target().id()]?.name || edge.target().data("label") || "Target";
-  const version = String(edge.data("version") || "");
-
-  if (kind === "producedBy") {
-    return "This package is built by a project in your scanned repos, so package consumers are treated as downstream of that project.";
-  }
-
-  if (kind === "packageRef") {
-    return `${sourceName} directly references package ${targetName}${version ? ` at ${version}` : ""}.`;
-  }
-
-  if (kind === "projectRef") {
-    return `${sourceName} has a ProjectReference to ${targetName}.`;
-  }
-
-  return "";
-}

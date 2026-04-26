@@ -48,7 +48,8 @@ internal sealed record ProjectNode(
     string? Sdk,
     IReadOnlyList<string> TargetFrameworks,
     ProjectClassification Classification,
-    string? PackageId);
+    string? PackageId,
+    string? Version);
 
 internal sealed record PackageNode(
     string Id,

@@ -22,10 +22,16 @@ internal sealed class GraphBuilder
     private readonly Dictionary<string, ProjectNode> _projects = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, PackageEntry> _packages = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<Edge> _edges = new();
+    private readonly IReadOnlyList<string> _namePrefixes;
 
     // Map from absolute csproj path to the owning solution id (first sln wins; we additionally emit
     // SolutionContains edges for each membership).
     private readonly Dictionary<string, string> _projectPathToPrimarySolutionId = new(StringComparer.OrdinalIgnoreCase);
+
+    public GraphBuilder(IReadOnlyList<string>? namePrefixes = null)
+    {
+        _namePrefixes = namePrefixes ?? Array.Empty<string>();
+    }
 
     public void AddDiscovered(DiscoveryResult discovered)
     {
@@ -47,7 +53,7 @@ internal sealed class GraphBuilder
             var repoPath = Discovery.FindGitRepoRoot(sln.Path) ?? discovered.Root;
             var repoId = _repos[repoPath].Id;
             var id = IdFor("sln", sln.Path);
-            var node = new SolutionNode(id, Path.GetFileNameWithoutExtension(sln.Path), sln.Path, repoId);
+            var node = new SolutionNode(id, StripPrefixes(Path.GetFileNameWithoutExtension(sln.Path)), sln.Path, repoId);
             _solutions[id] = node;
 
             foreach (var entry in sln.Projects)
@@ -67,7 +73,7 @@ internal sealed class GraphBuilder
 
             _projects[id] = new ProjectNode(
                 Id: id,
-                Name: Path.GetFileNameWithoutExtension(proj.Path),
+                Name: StripPrefixes(Path.GetFileNameWithoutExtension(proj.Path)),
                 AssemblyName: proj.AssemblyName,
                 Path: proj.Path,
                 SolutionId: primarySolutionId,
@@ -75,7 +81,8 @@ internal sealed class GraphBuilder
                 Sdk: proj.Sdk,
                 TargetFrameworks: proj.TargetFrameworks,
                 Classification: classification,
-                PackageId: proj.IsPackable ? proj.PackageId : null);
+                PackageId: proj.IsPackable ? proj.PackageId : null,
+                Version: proj.Version);
         }
 
         // 4) SolutionContains edges — emit one per sln-membership (a project can appear in multiple solutions).
@@ -219,6 +226,16 @@ internal sealed class GraphBuilder
         catch { /* git metadata is best-effort */ }
 
         return (branch, origin);
+    }
+
+    private string StripPrefixes(string name)
+    {
+        foreach (var prefix in _namePrefixes)
+        {
+            if (!string.IsNullOrEmpty(prefix) && name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return name[prefix.Length..];
+        }
+        return name;
     }
 
     private static string IdFor(string kind, string raw)

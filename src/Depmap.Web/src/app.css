@@ -76,21 +76,6 @@ button, input { font: inherit; }
 .canvas-inner { position: relative; height: calc(100vh - (var(--page-gutter) * 2)); }
 .canvas-stage { position: absolute; inset: 0; border-radius: 20px; overflow: hidden; }
 .graph-surface { position: absolute; inset: 0; }
-.graph-tooltip {
-  position: absolute;
-  z-index: 5;
-  max-width: 280px;
-  transform: translate(12px, -50%);
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: rgba(17, 24, 39, 0.94);
-  color: white;
-  font-size: 12px;
-  line-height: 1.35;
-  font-weight: 600;
-  pointer-events: none;
-  box-shadow: 0 12px 28px rgba(15,23,42,0.22);
-}
 
 .dock-panel {
   border-radius: var(--panel-radius);
@@ -811,7 +796,14 @@ button, input { font: inherit; }
 }
 
 .route-badge.has-tooltip::after {
+  left: auto;
+  right: 0;
   bottom: calc(100% + 6px);
+  transform: translateY(4px);
+}
+.route-badge.has-tooltip:hover::after,
+.route-badge.has-tooltip:focus-visible::after {
+  transform: translateY(0);
 }
 
 .route-badge.indirect {

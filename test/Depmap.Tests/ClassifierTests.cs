@@ -17,6 +17,7 @@ public class ClassifierTests
             Sdk: sdk,
             AssemblyName: "Project",
             PackageId: "Project",
+            Version: null,
             TargetFrameworks: new[] { "net8.0" },
             IsTestProject: isTest,
             IsPackable: isPackable,

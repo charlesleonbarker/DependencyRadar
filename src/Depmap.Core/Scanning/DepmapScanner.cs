@@ -6,12 +6,11 @@ namespace DependencyRadar.Scanning;
 
 public sealed record ScanRequest(
     IReadOnlyList<string> Roots,
-    IReadOnlyList<string> IgnoreGlobs)
+    IReadOnlyList<string> IgnoreGlobs,
+    IReadOnlyList<string> NamePrefixes)
 {
-    public IReadOnlyList<string> DisplayPathPrefixes { get; init; } = Array.Empty<string>();
-
-    public ScanRequest(string root, IReadOnlyList<string> ignoreGlobs)
-        : this(new[] { root }, ignoreGlobs)
+    public ScanRequest(string root, IReadOnlyList<string> ignoreGlobs, IReadOnlyList<string>? namePrefixes = null)
+        : this(new[] { root }, ignoreGlobs, namePrefixes ?? Array.Empty<string>())
     {
     }
 }
@@ -44,11 +43,6 @@ public sealed class DependencyRadarScanner
             .Select(Path.GetFullPath)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        var displayPathPrefixes = request.DisplayPathPrefixes
-            .Where(static prefix => !string.IsNullOrWhiteSpace(prefix))
-            .Select(Path.GetFullPath)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
 
         foreach (var root in normalizedRoots)
         {
@@ -56,7 +50,7 @@ public sealed class DependencyRadarScanner
                 throw new DirectoryNotFoundException($"root folder does not exist: {root}");
         }
 
-        var builder = new GraphBuilder();
+        var builder = new GraphBuilder(request.NamePrefixes);
         var totalSolutions = 0;
         var totalProjects = 0;
 
@@ -84,7 +78,7 @@ public sealed class DependencyRadarScanner
         return new ScanSnapshot(
             normalizedRoots,
             graph.ScannedAt,
-            GraphJsonWriter.Serialize(graph, indentJson, displayPathPrefixes),
+            GraphJsonWriter.Serialize(graph, indentJson),
             summary);
     }
 

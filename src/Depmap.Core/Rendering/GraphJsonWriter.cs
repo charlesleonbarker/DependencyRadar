@@ -14,9 +14,8 @@ internal static class GraphJsonWriter
     private static readonly JsonSerializerOptions _optionsCompact = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private static readonly JsonSerializerOptions _optionsIndented = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public static string Serialize(GraphModel graph, bool indent, IReadOnlyList<string>? displayPathPrefixes = null)
+    public static string Serialize(GraphModel graph, bool indent)
     {
-        var pathDisplay = new DisplayPathFormatter(displayPathPrefixes);
         var options = indent ? _optionsIndented : _optionsCompact;
 
         var payload = new
@@ -24,20 +23,17 @@ internal static class GraphJsonWriter
             schemaVersion = 1,
             scannedAt = graph.ScannedAt.ToString("O"),
             root = graph.Root,
-            displayRoot = pathDisplay.Format(graph.Root),
             repos = graph.Repos.Select(r => new
             {
                 id = r.Id,
                 name = r.Name,
                 path = r.Path,
-                displayPath = pathDisplay.Format(r.Path),
             }),
             solutions = graph.Solutions.Select(s => new
             {
                 id = s.Id,
                 name = s.Name,
                 path = s.Path,
-                displayPath = pathDisplay.Format(s.Path),
                 repo = s.RepoId,
             }),
             projects = graph.Projects.Select(p => new
@@ -46,13 +42,13 @@ internal static class GraphJsonWriter
                 name = p.Name,
                 assemblyName = p.AssemblyName,
                 path = p.Path,
-                displayPath = pathDisplay.Format(p.Path),
                 solution = p.SolutionId,
                 repo = p.RepoId,
                 sdk = p.Sdk,
                 tfms = p.TargetFrameworks,
                 kinds = SplitClassification(p.Classification),
                 packageId = p.PackageId,
+                version = p.Version,
             }),
             packages = graph.Packages.Select(p => new
             {
@@ -96,43 +92,4 @@ internal static class GraphJsonWriter
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
-    private sealed class DisplayPathFormatter
-    {
-        private readonly string[] _prefixes;
-
-        public DisplayPathFormatter(IReadOnlyList<string>? prefixes)
-        {
-            _prefixes = (prefixes ?? Array.Empty<string>())
-                .Where(static prefix => !string.IsNullOrWhiteSpace(prefix))
-                .Select(Normalize)
-                .OrderByDescending(static prefix => prefix.Length)
-                .ToArray();
-        }
-
-        public string Format(string path)
-        {
-            var normalized = Normalize(path);
-            foreach (var prefix in _prefixes)
-            {
-                if (!IsUnderPrefix(normalized, prefix))
-                    continue;
-
-                var trimmed = normalized[prefix.Length..].TrimStart('/');
-                return string.IsNullOrEmpty(trimmed) ? "." : trimmed;
-            }
-
-            return path;
-        }
-
-        private static bool IsUnderPrefix(string path, string prefix)
-        {
-            return path.Equals(prefix, StringComparison.OrdinalIgnoreCase)
-                || path.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string Normalize(string path)
-        {
-            return Path.GetFullPath(path).Replace('\\', '/').TrimEnd('/');
-        }
-    }
 }

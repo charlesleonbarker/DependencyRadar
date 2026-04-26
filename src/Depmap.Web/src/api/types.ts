@@ -10,14 +10,12 @@ export interface RepoNode {
   id: string;
   name: string;
   path: string;
-  displayPath?: string;
 }
 
 export interface SolutionNode {
   id: string;
   name: string;
   path: string;
-  displayPath?: string;
   repo?: string;
 }
 
@@ -26,12 +24,12 @@ export interface ProjectNode {
   name: string;
   assemblyName?: string;
   path: string;
-  displayPath?: string;
   repo?: string;
   sdk?: string;
   tfms?: string[];
   kinds?: ProjectKind[];
   packageId?: string;
+  version?: string;
 }
 
 export interface PackageNode {
@@ -51,7 +49,6 @@ export interface GraphEdge {
 
 export interface DepmapGraph {
   root?: string;
-  displayRoot?: string;
   repos: RepoNode[];
   solutions: SolutionNode[];
   projects: ProjectNode[];

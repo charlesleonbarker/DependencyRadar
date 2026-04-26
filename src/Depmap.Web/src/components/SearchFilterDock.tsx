@@ -114,10 +114,6 @@ export function SearchFilterDock({
   return (
     <div className="search-dock" ref={dockRef}>
       <div className="dock-panel search-filter-panel">
-        <div className="brand-lockup" aria-label="Dependency Radar">
-          <span className="brand-mark">DR</span>
-          <span className="brand-name">Dependency Radar</span>
-        </div>
         <div className="search-row">
           <input
             className="search-input"
@@ -166,7 +162,7 @@ export function SearchFilterDock({
                     {item.kinds && item.kinds.length > 0 && (
                       <span className="suggestion-tags">
                         {item.kinds.map((kind) => (
-                          <span key={kind} className={`suggestion-kind-tag ${KIND_CLASS[kind]}`} title={KIND_LABELS[kind]}>
+                          <span key={kind} className={`suggestion-kind-tag ${KIND_CLASS[kind]}`}>
                             {KIND_SHORT[kind]}
                           </span>
                         ))}
@@ -232,23 +228,23 @@ export function SearchFilterDock({
                 <button
                   key={kind}
                   type="button"
-                  className={`kind-pill${kindFilters[kind] !== false ? " active" : ""}`}
+                  className={`kind-pill has-tooltip${kindFilters[kind] !== false ? " active" : ""}`}
                   aria-pressed={kindFilters[kind] !== false}
-                  title={`${KIND_LABELS[kind]} projects`}
+                  data-tooltip={`${KIND_LABELS[kind]} projects`}
                   onClick={() => setKindFilters((c) => ({ ...c, [kind]: !c[kind] }))}
                 >
-                  <span className={`kind-pill-shape ${KIND_CLASS[kind]}`} title={KIND_LABELS[kind]} />
+                  <span className={`kind-pill-shape ${KIND_CLASS[kind]}`} />
                   {KIND_SHORT[kind]}
                 </button>
               ))}
               <button
                 type="button"
-                className={`kind-pill package-pill${showPackages ? " active" : ""}`}
+                className={`kind-pill package-pill has-tooltip${showPackages ? " active" : ""}`}
                 aria-pressed={showPackages}
-                title="Show external and unresolved package nodes. Internal package IDs stay searchable through their producer project."
+                data-tooltip="Show external and unresolved package nodes. Internal package IDs stay searchable through their producer project."
                 onClick={() => setShowPackages(!showPackages)}
               >
-                <span className="kind-pill-shape package-pill-shape" title="Package node" />
+                <span className="kind-pill-shape package-pill-shape" />
                 External
               </button>
             </div>
@@ -260,9 +256,9 @@ export function SearchFilterDock({
                     <button
                       key={repo.id}
                       type="button"
-                      className={`repo-filter-item${repoFilters[repo.id] !== false ? " active" : ""}`}
+                      className={`repo-filter-item has-tooltip${repoFilters[repo.id] !== false ? " active" : ""}`}
                       aria-pressed={repoFilters[repo.id] !== false}
-                      title={repo.displayPath || repo.path}
+                      data-tooltip={repo.path}
                       onClick={() => setRepoFilters((c) => ({ ...c, [repo.id]: c[repo.id] === false }))}
                     >
                       <span className="repo-filter-dot" />

@@ -117,7 +117,7 @@ public class GraphBuilderTests
     }
 
     [Fact]
-    public void Graph_json_includes_display_paths_without_rewriting_raw_paths_or_ids()
+    public void Graph_json_serializes_project_path_and_id()
     {
         using var ws = new TestFixtureWorkspace();
         var repo = ws.CreateRepo("alpha");
@@ -131,14 +131,13 @@ public class GraphBuilderTests
         var graph = builder.Build(ws.Root);
         var project = Assert.Single(graph.Projects, p => p.Name == "App");
 
-        using var json = JsonDocument.Parse(GraphJsonWriter.Serialize(graph, indent: false, displayPathPrefixes: new[] { ws.Root }));
+        using var json = JsonDocument.Parse(GraphJsonWriter.Serialize(graph, indent: false));
         var serializedProject = json.RootElement.GetProperty("projects")
             .EnumerateArray()
             .Single(p => p.GetProperty("id").GetString() == project.Id);
 
         Assert.Equal(project.Id, serializedProject.GetProperty("id").GetString());
         Assert.Equal(projectPath, serializedProject.GetProperty("path").GetString());
-        Assert.Equal("alpha/src/App/App.csproj", serializedProject.GetProperty("displayPath").GetString());
     }
 
     [Fact]

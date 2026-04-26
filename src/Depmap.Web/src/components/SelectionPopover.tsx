@@ -21,13 +21,13 @@ export function SelectionPopover({ selection, showExternal, onClose, onSelect, o
         <div className="selection-sticky-header">
           <div className="selection-header">
             <h2><DottedName value={node.name} /></h2>
-            <button className="ghost-button" type="button" title="Close details panel" onClick={onClose}>Close</button>
+            <button className="ghost-button" type="button" onClick={onClose}>Close</button>
           </div>
 
           {node.type === "project" ? (
             <div className="pill-row">
               {effectiveProjectKinds(node.kinds).map((kind) => (
-                <span key={kind} className={`pill ${kind}`} title={KIND_LABELS[kind]}>{KIND_SHORT[kind]}</span>
+                <span key={kind} className={`pill ${kind}`}>{KIND_SHORT[kind]}</span>
               ))}
             </div>
           ) : null}
@@ -36,7 +36,6 @@ export function SelectionPopover({ selection, showExternal, onClose, onSelect, o
             <button
               className="package-producer-card"
               type="button"
-              title="Open the project that produces this internal NuGet package"
               onClick={() => onSelect(selection.producedByProject!.id)}
             >
               <span>
@@ -74,7 +73,6 @@ function RepoProjectList({ selectedId, projects, onSelect, onHoverPath }: { sele
                 <button
                   className="impact-link"
                   type="button"
-                  title="Open this project"
                   onClick={() => onSelect(project.id)}
                   onMouseEnter={() => onHoverPath([[selectedId, project.id]])}
                   onFocus={() => onHoverPath([[selectedId, project.id]])}
@@ -182,14 +180,13 @@ function ProjectImpactGroups({ label, groups, selectedId, onSelect, onHoverPath 
       <div className="link-groups">
         {groups.map((group) => (
           <div key={group.repoName} className="link-group">
-            <div className="impact-title" title="Repository containing these affected projects">{group.repoName}</div>
+            <div className="impact-title">{group.repoName}</div>
             <ul className="impact-items">
               {group.projects.map((impact) => (
                 <li key={impact.project.id}>
                   <button
                     className="impact-link"
                     type="button"
-                    title={impactHelp(impact)}
                     onClick={() => onSelect(impact.project.id)}
                     onMouseEnter={() => onHoverPath(pathIdsFor(impact.paths, impact.project.id, selectedId))}
                     onFocus={() => onHoverPath(pathIdsFor(impact.paths, impact.project.id, selectedId))}
@@ -220,7 +217,7 @@ function DependencyGroups({ groups, selectedId, onSelect, onHoverPath }: { group
       <div className="link-groups">
         {groups.map((group) => (
           <div key={group.repoName} className="link-group">
-            <div className="impact-title" title="Repository containing these dependencies">{group.repoName}</div>
+            <div className="impact-title">{group.repoName}</div>
             <DependencyRows selectedId={selectedId} dependencies={group.dependencies} onSelect={onSelect} onHoverPath={onHoverPath} />
           </div>
         ))}
@@ -237,7 +234,6 @@ function DependencyRows({ selectedId, dependencies, onSelect, onHoverPath }: { s
           <button
             className="impact-link"
             type="button"
-            title={dependencyHelp(dependency)}
             onClick={() => onSelect(dependency.node.id)}
             onMouseEnter={() => onHoverPath(pathIdsFor(dependency.paths, dependency.node.id, selectedId))}
             onFocus={() => onHoverPath(pathIdsFor(dependency.paths, dependency.node.id, selectedId))}
@@ -307,23 +303,6 @@ function pathIdsFor(paths: AnyGraphNode[][], fallbackId: string, selectedId: str
   });
 }
 
-function impactHelp(impact: ImpactProject): string {
-  const base = impact.depth <= 1
-    ? "Directly affected by this selection."
-    : "Affected through another project or package.";
-
-  return impact.hasAlternativeRoute
-    ? `${base} Also reachable through another dependency route; the nearest route is shown in this section.`
-    : base;
-}
-
-function dependencyHelp(dependency: DependencyItem): string {
-  const route = dependency.depth <= 1 ? "Referenced directly by this selection." : "Reached through another project or package.";
-  const versions = dependency.referenceVersions?.length ? ` Referenced version: ${dependency.referenceVersions.join(", ")}.` : "";
-  return dependency.hasAlternativeRoute
-    ? `${route}${versions} Also reachable through another dependency route.`
-    : `${route}${versions}`;
-}
 
 function nodeLabels(node: AnyGraphNode, producedByName?: string): string[] {
   if (node.type === "project") {
@@ -331,6 +310,7 @@ function nodeLabels(node: AnyGraphNode, producedByName?: string): string[] {
       ...(node.sdk ? [node.sdk] : []),
       ...((node.tfms || []).length > 0 ? [node.tfms!.join(", ")] : []),
       ...(node.packageId ? [`package ${node.packageId}`] : []),
+      ...(node.version ? [`v ${node.version}`] : []),
     ];
   }
 

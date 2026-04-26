@@ -166,10 +166,7 @@ public sealed class FolderMonitorService : BackgroundService, IMonitorControl
         {
             var snapshot = await Task.Run(
                 () => _scanner.Scan(
-                    new ScanRequest(_roots, _options.IgnoreGlobs)
-                    {
-                        DisplayPathPrefixes = _options.DisplayPathPrefixes,
-                    },
+                    new ScanRequest(_roots, _options.IgnoreGlobs, _options.NamePrefixes),
                     message => _logger.LogInformation("{Message}", message)),
                 cancellationToken);
 

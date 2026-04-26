@@ -49,6 +49,7 @@ internal static class ProjectParser
 
         var packageId = ReadPropertyLast(root, "PackageId") ?? Path.GetFileNameWithoutExtension(absPath);
         var assemblyName = ReadPropertyLast(root, "AssemblyName") ?? Path.GetFileNameWithoutExtension(absPath);
+        var version = ReadPropertyLast(root, "Version");
 
         var isTestProjectExplicit = ReadBoolProperty(root, "IsTestProject");
         var isPackable = ReadBoolProperty(root, "IsPackable");
@@ -69,8 +70,8 @@ internal static class ProjectParser
         {
             var include = (string?)pr.Attribute("Include") ?? (string?)pr.Attribute("Update");
             if (string.IsNullOrWhiteSpace(include)) continue;
-            var version = (string?)pr.Attribute("Version") ?? (string?)pr.Element(pr.Name.Namespace + "Version");
-            packageReferences.Add(new ParsedPackageReference(include, version));
+            var pkgVersion = (string?)pr.Attribute("Version") ?? (string?)pr.Element(pr.Name.Namespace + "Version");
+            packageReferences.Add(new ParsedPackageReference(include, pkgVersion));
         }
 
         var isTest = isTestProjectExplicit
@@ -86,6 +87,7 @@ internal static class ProjectParser
             Sdk: sdk,
             AssemblyName: assemblyName,
             PackageId: packageId,
+            Version: version,
             TargetFrameworks: targetFrameworks,
             IsTestProject: isTest,
             IsPackable: packable,
@@ -131,6 +133,7 @@ internal sealed record ParsedProject(
     string? Sdk,
     string AssemblyName,
     string PackageId,
+    string? Version,
     IReadOnlyList<string> TargetFrameworks,
     bool IsTestProject,
     bool IsPackable,
