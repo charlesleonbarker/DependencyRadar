@@ -220,7 +220,7 @@ export function App() {
         </main>
       </div>
 
-      <Modal open={helpOpen} onClose={() => setHelpOpen(false)} eyebrow="Dependency Radar" title=".NET Impact Radar">
+      <Modal open={helpOpen} onClose={() => setHelpOpen(false)} eyebrow="Dependency Radar" title=".NET Impact Visualiser">
         <HelpContent status={status} counts={counts} />
       </Modal>
     </>
