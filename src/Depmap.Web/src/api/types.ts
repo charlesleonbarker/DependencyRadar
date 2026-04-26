@@ -2,7 +2,7 @@ export type NodeKind = "repo" | "solution" | "project" | "package";
 
 export type ProjectKind = "library" | "test" | "web" | "blazor" | "service" | "nuget-producing";
 
-export type PackageClassification = "internal" | "external" | "unknown" | string;
+export type PackageClassification = "internal" | "unknown" | string;
 
 export type EdgeKind = "solutionContains" | "projectRef" | "packageRef" | "producedBy";
 
@@ -24,6 +24,7 @@ export interface SolutionNode {
 export interface ProjectNode {
   id: string;
   name: string;
+  assemblyName?: string;
   path: string;
   displayPath?: string;
   repo?: string;

@@ -72,6 +72,10 @@ export interface GraphModel {
   hasAlternativeDependencyRoute(startId: string, targetId: string, shortestDepth: number): boolean;
 }
 
+function getTraversalStartIds(startId: string, node: AnyGraphNode | undefined): string[] {
+  return node?.type === "package" && node.producedBy ? [startId, node.producedBy] : [startId];
+}
+
 export function buildModel(graph: DepmapGraph): GraphModel {
   const nodesById: Record<string, AnyGraphNode> = {};
   const reposById: GraphModel["reposById"] = {};
@@ -160,7 +164,9 @@ export function buildModel(graph: DepmapGraph): GraphModel {
     nextKey: "from" | "to",
   ): boolean => {
     const maxDepth = Math.max(4, shortestDepth + 2);
-    const queue: Array<{ id: string; depth: number; seen: Set<string> }> = [{ id: startId, depth: 0, seen: new Set([startId]) }];
+    // visited is the path from startId to this node; using includes() on a short array
+    // is cheaper than allocating a new Set per frontier entry for paths of depth ≤ 6.
+    const queue: Array<{ id: string; depth: number; visited: string[] }> = [{ id: startId, depth: 0, visited: [startId] }];
     let foundShortest = false;
 
     for (let index = 0; index < queue.length; index += 1) {
@@ -169,7 +175,7 @@ export function buildModel(graph: DepmapGraph): GraphModel {
 
       for (const edge of adjacency[current.id] || []) {
         const next = edge[nextKey];
-        if (current.seen.has(next)) continue;
+        if (current.visited.includes(next)) continue;
 
         const depth = current.depth + 1;
         if (next === targetId) {
@@ -178,7 +184,7 @@ export function buildModel(graph: DepmapGraph): GraphModel {
           continue;
         }
 
-        queue.push({ id: next, depth, seen: new Set([...current.seen, next]) });
+        queue.push({ id: next, depth, visited: [...current.visited, next] });
       }
     }
 
@@ -193,7 +199,9 @@ export function buildModel(graph: DepmapGraph): GraphModel {
     nextKey: "from" | "to",
   ): string[][] => {
     const found: string[][] = [];
-    const queue: Array<{ id: string; pathIds: string[]; seen: Set<string> }> = [{ id: startId, pathIds: [startId], seen: new Set([startId]) }];
+    // pathIds doubles as the visited set; includes() on a short array avoids allocating
+    // a separate Set per frontier entry.
+    const queue: Array<{ id: string; pathIds: string[] }> = [{ id: startId, pathIds: [startId] }];
 
     for (let index = 0; index < queue.length && found.length < 8; index += 1) {
       const current = queue[index];
@@ -201,7 +209,7 @@ export function buildModel(graph: DepmapGraph): GraphModel {
 
       for (const edge of adjacency[current.id] || []) {
         const next = edge[nextKey];
-        if (current.seen.has(next)) continue;
+        if (current.pathIds.includes(next)) continue;
 
         const nextPath = [...current.pathIds, next];
         if (next === targetId) {
@@ -210,7 +218,7 @@ export function buildModel(graph: DepmapGraph): GraphModel {
           continue;
         }
 
-        queue.push({ id: next, pathIds: nextPath, seen: new Set([...current.seen, next]) });
+        queue.push({ id: next, pathIds: nextPath });
       }
     }
 
@@ -254,10 +262,7 @@ export function buildModel(graph: DepmapGraph): GraphModel {
     const reached = unique(starts.flatMap((id) => walk(id, adjacency, nextKey))).filter((id) => !projectSet.has(id));
     return includeProjects ? unique([...starts, ...reached]) : reached;
   };
-  const traversalStartIds = (startId: string): string[] => {
-    const node = nodesById[startId];
-    return node?.type === "package" && node.producedBy ? [startId, node.producedBy] : [startId];
-  };
+  const traversalStartIds = (startId: string): string[] => getTraversalStartIds(startId, nodesById[startId]);
   const compositeReach = (startId: string, adjacency: Record<string, GraphEdge[]>, nextKey: "from" | "to"): string[] => {
     const starts = traversalStartIds(startId);
     return unique(starts.flatMap((id) => walk(id, adjacency, nextKey))).filter((id) => !starts.includes(id));
@@ -295,7 +300,7 @@ export function describeSelection(model: GraphModel, selectionId: string | null)
     return describeRepoSelection(model, node);
   }
 
-  const traversalStartIds = node.type === "package" && node.producedBy ? [selectionId, node.producedBy] : [selectionId];
+  const traversalStartIds = getTraversalStartIds(selectionId, node);
   const ancestors = unique(traversalStartIds.flatMap((id) => model.reverseReach(id))).filter((id) => !traversalStartIds.includes(id));
   const descendants = unique(traversalStartIds.flatMap((id) => model.forwardReach(id))).filter((id) => !traversalStartIds.includes(id));
   const impactedProjects = ancestors
@@ -460,8 +465,13 @@ function dependencyItemsFromStarts(model: GraphModel, starts: string[], descenda
     } else {
       const base = routePriority(item) > routePriority(current) ? item : current;
       const mergedPaths = uniqueNodePaths([...current.paths, ...item.paths]);
+      // Use the minimum depth across both routes; the base item may not hold the shortest path.
+      const minDepth = Math.min(current.depth, item.depth);
+      const minPath = minDepth === current.depth ? current.path : item.path;
       items.set(node.id, {
         ...base,
+        depth: minDepth,
+        path: minPath,
         paths: mergedPaths,
         hasAlternativeRoute: current.hasAlternativeRoute || item.hasAlternativeRoute || mergedPaths.length > 1,
         referenceVersions: mergeVersions(current.referenceVersions, item.referenceVersions),

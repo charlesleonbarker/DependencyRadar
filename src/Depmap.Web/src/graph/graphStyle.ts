@@ -55,7 +55,6 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
   { selector: ".n-package", style: { shape: "diamond", width: 30, height: 30 } },
   { selector: ".pkg-internal", style: { "background-color": "#16a34a", color: "#14532d" } },
   { selector: ".pkg-unknown", style: { "background-color": "#64748b", opacity: 0.92 } },
-  { selector: ".pkg-external", style: { "background-color": "#64748b", opacity: 0.92 } },
   {
     selector: "edge",
     style: {

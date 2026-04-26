@@ -11,14 +11,13 @@ namespace DependencyRadar.Rendering;
 /// </summary>
 internal static class GraphJsonWriter
 {
+    private static readonly JsonSerializerOptions _optionsCompact = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions _optionsIndented = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     public static string Serialize(GraphModel graph, bool indent, IReadOnlyList<string>? displayPathPrefixes = null)
     {
         var pathDisplay = new DisplayPathFormatter(displayPathPrefixes);
-        var options = new JsonSerializerOptions
-        {
-            WriteIndented = indent,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        };
+        var options = indent ? _optionsIndented : _optionsCompact;
 
         var payload = new
         {

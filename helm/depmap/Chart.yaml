@@ -1,6 +1,0 @@
-apiVersion: v2
-name: dependency-radar
-description: .NET dependency impact radar
-type: application
-version: 0.1.0
-appVersion: "1.0.0"

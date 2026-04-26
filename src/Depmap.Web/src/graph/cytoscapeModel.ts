@@ -134,12 +134,15 @@ export function applyVisibility(cy: cytoscape.Core | null, filterState: FilterSt
         visible = repoFilters[repoId] !== false && effectiveProjectKinds(kinds).some((kind) => kindFilters[kind] !== false);
       } else if (type === "package") {
         const classification = node.data("classification");
-        if ((classification === "external" || classification === "unknown") && !showExternal) visible = false;
+        if (classification !== "internal" && !showExternal) visible = false;
       }
 
       node.toggleClass("is-filtered", !visible);
     });
 
+    // Second pass: hide packages with no visible project connections.
+    // Project nodes are fully filtered by the pass above, so checking their .is-filtered
+    // state here is correct even though edge filtering hasn't run yet.
     cy.nodes(".n-package").forEach((node) => {
       if (node.hasClass("is-filtered")) return;
 

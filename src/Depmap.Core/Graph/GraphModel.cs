@@ -19,7 +19,6 @@ internal enum EdgeKind
 internal enum PackageClassification
 {
     Internal,
-    External,
     Unknown,
 }
 
@@ -33,7 +32,6 @@ internal enum ProjectClassification
     Blazor        = 1 << 3,
     Service       = 1 << 4,
     NugetProducing= 1 << 5,
-    Console       = 1 << 6,
 }
 
 internal sealed record RepoNode(string Id, string Name, string Path, string? Branch, string? Origin);

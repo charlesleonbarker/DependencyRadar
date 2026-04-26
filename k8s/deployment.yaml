@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-radar
+  namespace: dependency-radar
+  labels:
+    app: dependency-radar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dependency-radar
+  template:
+    metadata:
+      labels:
+        app: dependency-radar
+    spec:
+      # Pin to the node that has the repos on disk.
+      # EDIT: replace with the output of `kubectl get nodes -o wide`
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - your-node-hostname
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: dependency-radar
+          image: ghcr.io/charlesleonbarker/dependancymap:main
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: repos
+              mountPath: /repos
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            failureThreshold: 3
+
+      volumes:
+        - name: repos
+          hostPath:
+            # EDIT: absolute path on the node where your git repos live
+            path: /path/to/repos
+            type: Directory

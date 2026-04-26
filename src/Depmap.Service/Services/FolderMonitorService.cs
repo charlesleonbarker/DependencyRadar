@@ -87,7 +87,7 @@ public sealed class FolderMonitorService : BackgroundService, IMonitorControl
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
-    public override Task StopAsync(CancellationToken cancellationToken)
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
         lock (_gate)
         {
@@ -103,8 +103,10 @@ public sealed class FolderMonitorService : BackgroundService, IMonitorControl
         }
 
         _watchers.Clear();
+        // Await base first so ExecuteAsync's CancellationToken is signalled and any
+        // in-flight ScanAsync call has a chance to exit cleanly before we dispose the lock.
+        await base.StopAsync(cancellationToken);
         _scanLock.Dispose();
-        return base.StopAsync(cancellationToken);
     }
 
     public Task RequestRescanAsync(CancellationToken cancellationToken)
@@ -130,7 +132,7 @@ public sealed class FolderMonitorService : BackgroundService, IMonitorControl
             debounceCts = _debounceCts;
         }
 
-        _ = DebounceAndScanAsync(debounceCts.Token);
+        _ = DebounceAndScanAsync(debounceCts);
     }
 
     private void OnWatcherError(object sender, ErrorEventArgs args)
@@ -139,15 +141,19 @@ public sealed class FolderMonitorService : BackgroundService, IMonitorControl
         _state.SetError(args.GetException().Message);
     }
 
-    private async Task DebounceAndScanAsync(CancellationToken cancellationToken)
+    private async Task DebounceAndScanAsync(CancellationTokenSource cts)
     {
-        try
+        // The CTS is owned by this task; dispose it when done so it isn't held until the next event.
+        using (cts)
         {
-            await Task.Delay(Math.Max(250, _options.DebounceMilliseconds), cancellationToken);
-            await ScanAsync(cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
+            try
+            {
+                await Task.Delay(Math.Max(250, _options.DebounceMilliseconds), cts.Token);
+                await ScanAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
         }
     }
 

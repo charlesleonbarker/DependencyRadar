@@ -5,13 +5,7 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var monitorOptionsSection = builder.Configuration.GetSection(MonitorOptions.SectionName);
-if (!monitorOptionsSection.GetChildren().Any())
-{
-    monitorOptionsSection = builder.Configuration.GetSection("Depmap");
-}
-
-builder.Services.Configure<MonitorOptions>(monitorOptionsSection);
+builder.Services.Configure<MonitorOptions>(builder.Configuration.GetSection(MonitorOptions.SectionName));
 builder.Services.AddSingleton<DependencyRadarScanner>();
 builder.Services.AddSingleton<MonitorState>();
 builder.Services.AddSingleton<FolderMonitorService>();

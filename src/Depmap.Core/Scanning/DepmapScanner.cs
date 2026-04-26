@@ -57,19 +57,19 @@ public sealed class DependencyRadarScanner
         }
 
         var builder = new GraphBuilder();
-        var discoveredProjects = new List<ParsedProject>();
         var totalSolutions = 0;
+        var totalProjects = 0;
 
         foreach (var root in normalizedRoots)
         {
             log($"scanning {root}...");
             var discovered = Discovery.Discover(root, request.IgnoreGlobs, log);
             totalSolutions += discovered.Solutions.Count;
-            discoveredProjects.AddRange(discovered.Projects);
+            totalProjects += discovered.Projects.Count;
             builder.AddDiscovered(discovered);
         }
 
-        log($"  found {totalSolutions} solution(s), {discoveredProjects.Count} project(s)");
+        log($"  found {totalSolutions} solution(s), {totalProjects} project(s)");
 
         var graph = builder.Build(RenderRootsLabel(normalizedRoots));
         var summary = new GraphSummary(
