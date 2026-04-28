@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <!-- Anti-pattern: test project accidentally marked IsPackable=true — produces a NuGet package nobody consumes -->
+    <IsPackable>true</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meridian.Admin.Portal.Web\Meridian.Admin.Portal.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.2" />
+    <PackageReference Include="Meridian.Platform.Testing.Integration" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>

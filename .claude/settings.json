@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet format:*)",
+      "Bash(dotnet run --project src/DependencyRadar.Service:*)",
+      "Bash(npm install --prefix src/DependencyRadar.Web:*)",
+      "Bash(npm run build --prefix src/DependencyRadar.Web:*)",
+      "Bash(npm run typecheck --prefix src/DependencyRadar.Web:*)",
+      "Bash(npm run dev --prefix src/DependencyRadar.Web:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git stash list:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(rg:*)",
+      "Bash(find . -name:*)",
+      "Bash(find . -type:*)"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(rm -rf /:*)",
+      "Bash(rm -rf ~:*)",
+      "Bash(rm -rf *)",
+      "Bash(curl * nuget.org*)",
+      "Bash(curl * api.github.com*)",
+      "Bash(wget * nuget.org*)"
+    ]
+  },
+  "model": "claude-sonnet-4-6",
+  "outputStyle": "default",
+  "includeCoAuthoredBy": false
+}

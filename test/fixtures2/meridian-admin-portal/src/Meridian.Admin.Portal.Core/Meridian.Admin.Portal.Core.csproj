@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Anti-pattern: crosses bounded contexts — references contracts from Identity, Reporting, Commerce, and Finance -->
+    <!-- Anti-pattern: stale package versions across the board (version drift) -->
+    <PackageReference Include="Meridian.Platform.Core.Common" Version="1.3.0" />
+    <PackageReference Include="Meridian.Identity.Service.Contracts" Version="1.5.0" />
+    <PackageReference Include="Meridian.Reporting.Analytics.Contracts" Version="0.9.0" />
+    <PackageReference Include="Meridian.Commerce.Orders.Contracts" Version="1.2.0" />
+    <PackageReference Include="Meridian.Finance.Billing.Contracts" Version="0.8.0" />
+  </ItemGroup>
+
+</Project>

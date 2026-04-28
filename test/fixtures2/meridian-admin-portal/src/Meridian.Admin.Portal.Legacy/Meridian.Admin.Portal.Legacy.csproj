@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Anti-pattern: abandoned on net6.0 while the rest of the estate is net8.0 -->
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Anti-pattern: even older version of Platform.Core.Common (1.1.0 vs 1.5.0) -->
+    <PackageReference Include="Meridian.Platform.Core.Common" Version="1.1.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+</Project>

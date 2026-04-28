@@ -5,15 +5,20 @@ obj/
 # Frontend build output
 node_modules/
 src/DependencyRadar.Web/dist/
+src/DependencyRadar.Web/storybook-static/
 
 # Scanner output artifacts
 depmap.html
 graph.json
 
+# Claude Code
+.claude/settings.local.json
+
 # IDE
 .vs/
 .idea/
 *.user
+.vscode/*.log
 
 # OS
 .DS_Store

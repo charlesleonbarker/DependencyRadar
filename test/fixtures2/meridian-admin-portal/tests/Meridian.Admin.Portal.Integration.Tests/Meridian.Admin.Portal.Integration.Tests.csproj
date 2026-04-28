@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Anti-pattern: "god test" — directly references multiple production projects for broad integration coverage -->
+    <ProjectReference Include="..\..\src\Meridian.Admin.Portal.Bff\Meridian.Admin.Portal.Bff.csproj" />
+    <ProjectReference Include="..\..\src\Meridian.Admin.Portal.Core\Meridian.Admin.Portal.Core.csproj" />
+    <ProjectReference Include="..\..\src\Meridian.Admin.Portal.Utilities\Meridian.Admin.Portal.Utilities.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.2" />
+    <PackageReference Include="Meridian.Platform.Testing.Integration" Version="1.0.0" />
+    <PackageReference Include="Meridian.Platform.Testing.Fakes" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>

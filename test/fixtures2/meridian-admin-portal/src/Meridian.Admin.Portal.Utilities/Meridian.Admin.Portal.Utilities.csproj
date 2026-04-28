@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meridian.Admin.Portal.Core\Meridian.Admin.Portal.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Anti-pattern: production code referencing a test helper package -->
+    <PackageReference Include="Meridian.Platform.Testing.Abstractions" Version="1.0.0" />
+    <PackageReference Include="Meridian.Platform.Core.Abstractions" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>
