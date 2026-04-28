@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import type { ProjectKind, RepoNode } from "../api/types";
 import type { SearchSuggestion } from "../domain/graphModel";
+import { toTitleCase } from "../domain/graphModel";
 import { DEFAULT_KINDS, KIND_CLASS, KIND_SHORT } from "../domain/projectKinds";
 
 interface SearchFilterDockProps {
@@ -282,7 +283,7 @@ export function SearchFilterDock({
                       onClick={() => setRepoFilters((c) => ({ ...c, [repo.id]: c[repo.id] === false }))}
                     >
                       <span className="repo-filter-dot" />
-                      {repo.name}
+                      {toTitleCase(repo.name)}
                     </button>
                   ))}
                 </div>

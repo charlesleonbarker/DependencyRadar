@@ -70,8 +70,8 @@ export function HelpContent({ status, counts }: HelpContentProps) {
           <li><strong>All Consumers</strong> lists every project that depends on the selected node, directly or indirectly.</li>
           <li><strong>All Dependencies</strong> lists internal projects or locally resolved NuGet packages used by the selected node.</li>
           <li><strong>External packages</strong> lists unresolved or external NuGet packages when external package visibility is enabled.</li>
-          <li><strong>Direct Project</strong> means a ProjectReference. <strong>Indirect Project</strong> means a chain of ProjectReferences with no NuGet package edge in the route.</li>
-          <li><strong>Direct Package</strong> means a NuGet package reference. <strong>Indirect Package</strong> means the route goes through at least one NuGet package reference.</li>
+          <li><strong>Direct</strong> means there is a single ProjectReference or PackageReference connecting the two nodes with no intermediate hops.</li>
+          <li><strong>Indirect (n)</strong> means the route passes through n intermediate nodes — projects or packages — before reaching the destination. Click any row to expand the full route chain.</li>
           <li><strong>Referenced version</strong> on the selected node lists the NuGet package versions found in local consumers. If more than one version is referenced, the panel shows <strong>Referenced versions</strong> with the full comma-separated set.</li>
           <li><strong>refs vX</strong> appears on consumer rows. It means that row, or a project underneath it in the impact path, references the selected NuGet package version.</li>
           <li><strong>using vX</strong> appears on dependency rows. It means the selected node, or a project underneath it in the dependency path, uses that dependency package version.</li>

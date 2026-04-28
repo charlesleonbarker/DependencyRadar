@@ -15,6 +15,7 @@ export interface ImpactProject {
   depth: number;
   path: AnyGraphNode[];
   paths: AnyGraphNode[][];
+  pathVersions?: Array<string | undefined>;
   hasAlternativeRoute: boolean;
   routeKind: RouteKind;
   referenceVersions?: string[];
@@ -27,6 +28,7 @@ export interface DependencyItem {
   depth: number;
   path: AnyGraphNode[];
   paths: AnyGraphNode[][];
+  pathVersions?: Array<string | undefined>;
   hasAlternativeRoute: boolean;
   routeKind: RouteKind;
   referenceVersions?: string[];
@@ -245,7 +247,7 @@ export function buildModel(graph: DependencyRadarGraph): GraphModel {
   const suggestions: SearchSuggestion[] = [
     ...graph.repos.map((repo) => ({
       id: repo.id,
-      label: repo.name,
+      label: toTitleCase(repo.name),
       sublabel: repo.path,
       type: "repo" as const,
     })),
@@ -337,11 +339,18 @@ export function describeSelection(model: GraphModel, selectionId: string | null)
         new Set([id, ...model.forwardReach(id)]),
         versionContextPackageIds,
       ) || packageReferenceVersionsOnPaths(model.graph.edges, routePaths.all, versionContextPackageIds);
+      const pathVersions = versionContextPackageIds.length > 0
+        ? routePaths.all.map((rawRoute) => {
+            const vs = packageReferenceVersionsOnPaths(model.graph.edges, [rawRoute], versionContextPackageIds);
+            return vs && vs.length > 0 ? vs[0] : undefined;
+          })
+        : undefined;
       return {
         project,
         depth,
         path: pathIds.map((pathId) => model.nodesById[pathId]).filter(Boolean),
         paths,
+        ...(pathVersions?.some(Boolean) ? { pathVersions } : {}),
         hasAlternativeRoute: paths.length > 1 || traversalStartIds.some((start) => model.hasAlternativeImpactRoute(start, id, rawDepth)),
         routeKind: routeKindForPath(model.graph.edges, rawPathIds),
         ...(referenceVersions ? { referenceVersions } : {}),
@@ -444,11 +453,18 @@ function impactFromStarts(model: GraphModel, starts: string[], targetId: string)
     new Set([targetId, ...model.forwardReach(targetId)]),
     versionContextPackageIds,
   ) || packageReferenceVersionsOnPaths(model.graph.edges, routePaths.all, versionContextPackageIds);
+  const pathVersions = versionContextPackageIds.length > 0
+    ? routePaths.all.map((rawRoute) => {
+        const vs = packageReferenceVersionsOnPaths(model.graph.edges, [rawRoute], versionContextPackageIds);
+        return vs && vs.length > 0 ? vs[0] : undefined;
+      })
+    : undefined;
   return {
     project,
     depth,
     path: pathIds.map((pathId) => model.nodesById[pathId]).filter(Boolean),
     paths,
+    ...(pathVersions?.some(Boolean) ? { pathVersions } : {}),
     hasAlternativeRoute: paths.length > 1 || starts.some((start) => model.hasAlternativeImpactRoute(start, targetId, rawDepth)),
     routeKind: routeKindForPath(model.graph.edges, rawPathIds),
     ...(referenceVersions ? { referenceVersions } : {}),
@@ -481,11 +497,18 @@ function dependencyItemsFromStarts(model: GraphModel, starts: string[], descenda
     const rawDepth = Math.max(0, rawPathIds.length - 1);
     const paths = routePaths.all.map((route) => compressInternalPackagePath(model, route).map((pathId) => model.nodesById[pathId]).filter(Boolean));
     const targetPackageIds = packageIdsForDependencyTarget(model, rawNode, node);
+    const depPathVersions = targetPackageIds.length > 0
+      ? routePaths.all.map((rawRoute) => {
+          const vs = packageReferenceVersionsOnPaths(model.graph.edges, [rawRoute], targetPackageIds);
+          return vs && vs.length > 0 ? vs[0] : undefined;
+        })
+      : undefined;
     const item: DependencyItem = {
       node,
       depth,
       path: pathIds.map((pathId) => model.nodesById[pathId]).filter(Boolean),
       paths,
+      ...(depPathVersions?.some(Boolean) ? { pathVersions: depPathVersions } : {}),
       hasAlternativeRoute: paths.length > 1 || starts.some((start) => model.hasAlternativeDependencyRoute(start, targetId, rawDepth)),
       routeKind: routeKindForPath(model.graph.edges, rawPathIds),
       referenceVersions: packageReferenceVersionsFromReachableProjects(model.graph.edges, reachableIds, targetPackageIds)
@@ -506,6 +529,7 @@ function dependencyItemsFromStarts(model: GraphModel, starts: string[], descenda
         depth: minDepth,
         path: minPath,
         paths: mergedPaths,
+        pathVersions: undefined,
         hasAlternativeRoute: current.hasAlternativeRoute || item.hasAlternativeRoute || mergedPaths.length > 1,
         routeKind: routePriority(item) > routePriority(current) ? item.routeKind : current.routeKind,
         referenceVersions: mergeVersions(current.referenceVersions, item.referenceVersions),
@@ -684,7 +708,7 @@ function packageSublabel(pkg: PackageNode, projectsById: GraphModel["projectsByI
 function groupProjectsByRepo(projects: ImpactProject[], reposById: GraphModel["reposById"]): ProjectGroup[] {
   const groups = new Map<string, ImpactProject[]>();
   for (const impact of projects) {
-    const repoName = reposById[impact.project.repo || ""]?.name || "Unknown repo";
+    const repoName = toTitleCase(reposById[impact.project.repo || ""]?.name || "Unknown repo");
     groups.set(repoName, [...(groups.get(repoName) || []), impact]);
   }
 
@@ -700,7 +724,7 @@ function groupDependenciesByRepo(dependencies: DependencyItem[], reposById: Grap
   const groups = new Map<string, DependencyItem[]>();
   for (const dependency of dependencies) {
     const repoId = dependency.node.type === "project" ? dependency.node.repo : undefined;
-    const repoName = reposById[repoId || ""]?.name || "Unknown repo";
+    const repoName = toTitleCase(reposById[repoId || ""]?.name || "Unknown repo");
     groups.set(repoName, [...(groups.get(repoName) || []), dependency]);
   }
 
@@ -710,6 +734,10 @@ function groupDependenciesByRepo(dependencies: DependencyItem[], reposById: Grap
       repoName,
       dependencies: repoDependencies.sort((a, b) => a.node.name.localeCompare(b.node.name)),
     }));
+}
+
+export function toTitleCase(name: string): string {
+  return name.toLowerCase().replace(/(^|[-_ .])(\w)/g, (_, sep, char) => sep + char.toUpperCase());
 }
 
 export function formatDate(value?: string): string {

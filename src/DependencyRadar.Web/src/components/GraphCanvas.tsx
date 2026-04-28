@@ -1,25 +1,17 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { MutableRefObject } from "react";
 import cytoscape from "cytoscape";
 import cytoscapeDagre from "cytoscape-dagre";
 import cytoscapeFcose from "cytoscape-fcose";
 import type { DependencyRadarGraph, MonitorStatus } from "../api/types";
 import type { GraphModel } from "../domain/graphModel";
-import { applyNodeScale, applySelection, applySidebarHover, applyVisibility, buildElements, fitGraph, fitSelection, type FilterState, type LayoutId, runLayout } from "../graph/cytoscapeModel";
-import { GRAPH_STYLE } from "../graph/graphStyle";
+import { applyDensity, applyNodeScale, applySelection, applySidebarHover, applyVisibility, buildElements, fitGraph, fitSelection, restoreCompoundParents, type FilterState, type LayoutId, runLayout, type ViewOptions } from "../graph/cytoscapeModel";
+import { graphStyleFromElement } from "../graph/graphStyle";
 
 cytoscape.use(cytoscapeFcose);
 cytoscape.use(cytoscapeDagre);
 
-const SCREEN_FONT = 13;
 const NODE_SCALE_BASELINE = 1.75;
-
-function scaleFonts(cy: cytoscape.Core) {
-  const z = cy.zoom();
-  cy.batch(() => {
-    cy.nodes(":not(.n-repo)").style("font-size", SCREEN_FONT / z);
-  });
-}
 
 interface GraphCanvasProps {
   graph: DependencyRadarGraph | null;
@@ -32,10 +24,11 @@ interface GraphCanvasProps {
   layoutRunKey: number;
   groupByRepo: boolean;
   filterState: FilterState;
+  viewOptions: ViewOptions;
   searchText: string;
   status: MonitorStatus | null;
-  nodeScale: number;
   leftInset?: number;
+  styleKey?: string;
 }
 
 export function GraphCanvas({
@@ -49,15 +42,17 @@ export function GraphCanvas({
   layoutRunKey,
   groupByRepo,
   filterState,
+  viewOptions,
   searchText: _searchText,
   status,
-  nodeScale,
   leftInset = 0,
+  styleKey,
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
   const modelRef = useRef<GraphModel | null>(model);
   const lastSelectionFitKeyRef = useRef<string | null>(null);
+  const lastDensityRef = useRef(viewOptions.density);
 
   useEffect(() => {
     modelRef.current = model;
@@ -69,8 +64,8 @@ export function GraphCanvas({
     const cy = cytoscape({
       container: containerRef.current,
       elements: buildElements(graph, groupByRepo),
-      wheelSensitivity: 0.18,
-      style: GRAPH_STYLE,
+      wheelSensitivity: 0.35,
+      style: graphStyleFromElement(containerRef.current),
       layout: { name: "grid" },
     });
 
@@ -83,37 +78,50 @@ export function GraphCanvas({
     });
     cy.edges().unselectify();
     cyRef.current = cy;
-    cy.on("zoom", () => scaleFonts(cy));
     applyVisibility(cy, filterState);
-    applyNodeScale(cy, nodeScale * NODE_SCALE_BASELINE);
-    runLayout(cy, layout);
-    scaleFonts(cy);
+    applyNodeScale(cy, NODE_SCALE_BASELINE);
+    runLayout(cy, layout, viewOptions);
     applySelection(cy, model, selectionId);
     applySidebarHover(cy, model, hoverPathIds);
     fitSelectionOnce(cy, model, selectionId, leftInset, lastSelectionFitKeyRef);
+    lastDensityRef.current = viewOptions.density;
 
     return () => {
       cy.destroy();
       cyRef.current = null;
       lastSelectionFitKeyRef.current = null;
+      lastDensityRef.current = viewOptions.density;
     };
   }, [graph, groupByRepo]);
+
+  useLayoutEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || !containerRef.current) return;
+
+    cy.style(graphStyleFromElement(containerRef.current)).update();
+    applySelection(cy, model, selectionId);
+    applySidebarHover(cy, model, hoverPathIds);
+  }, [styleKey, model, selectionId, hoverPathIds]);
+
+  useEffect(() => {
+    const previousDensity = lastDensityRef.current;
+    const nextDensity = viewOptions.density;
+    applyDensity(cyRef.current, previousDensity, nextDensity);
+    lastDensityRef.current = nextDensity;
+  }, [viewOptions.density]);
 
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
+    restoreCompoundParents(cy);
     applyVisibility(cy, filterState);
-    runLayout(cy, layout);
-    scaleFonts(cy);
+    runLayout(cy, layout, viewOptions);
     applySelection(cy, model, selectionId);
     applySidebarHover(cy, model, hoverPathIds);
     lastSelectionFitKeyRef.current = null;
     fitSelectionOnce(cy, model, selectionId, leftInset, lastSelectionFitKeyRef);
+    lastDensityRef.current = viewOptions.density;
   }, [filterState, layout, layoutRunKey, graph, groupByRepo]);
-
-  useEffect(() => {
-    applyNodeScale(cyRef.current, nodeScale * NODE_SCALE_BASELINE);
-  }, [nodeScale]);
 
   useEffect(() => {
     const cy = cyRef.current;
@@ -157,6 +165,8 @@ function fitSelectionOnce(
     lastFitKeyRef.current = null;
     return;
   }
+
+  if (leftInset === 0) return;
 
   const fitKey = `${selectionId}:${leftInset}`;
   if (lastFitKeyRef.current === fitKey) return;

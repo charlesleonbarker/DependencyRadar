@@ -1,14 +1,24 @@
 import type cytoscape from "cytoscape";
 import type { DependencyRadarGraph, ProjectKind } from "../api/types";
 import type { GraphModel } from "../domain/graphModel";
+import { toTitleCase } from "../domain/graphModel";
 import { effectiveProjectKinds } from "../domain/projectKinds";
 
 export type LayoutId = "dagre" | "fcose" | "concentric";
+
+export interface ViewOptions {
+  density: number;
+}
+
+export const DEFAULT_VIEW_OPTIONS: ViewOptions = {
+  density: 0.5,
+};
 
 export interface FilterState {
   kindFilters: Record<ProjectKind, boolean>;
   repoFilters: Record<string, boolean>;
   showExternal: boolean;
+  focusIds: Set<string> | null;
 }
 
 export function buildElements(graph: DependencyRadarGraph, groupByRepo: boolean): cytoscape.ElementDefinition[] {
@@ -21,7 +31,7 @@ export function buildElements(graph: DependencyRadarGraph, groupByRepo: boolean)
 
   if (groupByRepo) {
     graph.repos.forEach((repo) => {
-      elements.push({ data: { id: repo.id, label: repo.name, type: "repo" }, classes: "n-repo" });
+      elements.push({ data: { id: repo.id, label: toTitleCase(repo.name), type: "repo" }, classes: "n-repo" });
     });
   }
 
@@ -78,12 +88,8 @@ export function applyNodeScale(cy: cytoscape.Core | null, scale: number): void {
   });
 }
 
-export function runLayout(cy: cytoscape.Core | null, layout: LayoutId): void {
+export function restoreCompoundParents(cy: cytoscape.Core | null): void {
   if (!cy) return;
-
-  // Restore any nodes that were moved outside their compound parent for the selection
-  // visual. Layout algorithms require a clean compound graph; applySelection re-applies
-  // the visual state immediately after this call in every callsite.
   cy.nodes().forEach((node) => {
     const savedParent = node.data("_sp") as string | undefined;
     if (savedParent) {
@@ -91,6 +97,12 @@ export function runLayout(cy: cytoscape.Core | null, layout: LayoutId): void {
       node.removeData("_sp");
     }
   });
+}
+
+export function runLayout(cy: cytoscape.Core | null, layout: LayoutId, viewOptions: ViewOptions = DEFAULT_VIEW_OPTIONS): void {
+  if (!cy) return;
+
+  restoreCompoundParents(cy);
 
   const allVisible = cy.elements().not(".is-filtered");
 
@@ -102,12 +114,13 @@ export function runLayout(cy: cytoscape.Core | null, layout: LayoutId): void {
     return visibleNodeIds.has(ele.source().id()) && visibleNodeIds.has(ele.target().id());
   });
 
+  const density = densityOptions(viewOptions.density);
   const config: cytoscape.LayoutOptions =
     layout === "fcose"
-      ? ({ name: "fcose", eles, animate: false, nodeRepulsion: 6800, idealEdgeLength: 142, packComponents: true, gravity: 0.14, fit: true, padding: 64 } as cytoscape.LayoutOptions)
+      ? ({ name: "fcose", eles, animate: false, nodeRepulsion: density.nodeRepulsion, idealEdgeLength: density.idealEdgeLength, packComponents: true, gravity: 0.14, fit: true, padding: density.padding } as cytoscape.LayoutOptions)
       : layout === "concentric"
-        ? ({ name: "concentric", eles, animate: false, fit: true, padding: 64, minNodeSpacing: 42, concentric: (node: cytoscape.NodeSingular) => node.indegree(false), levelWidth: () => 1 } as cytoscape.LayoutOptions)
-      : ({ name: "dagre", eles, rankDir: "LR", ranker: "tight-tree", nodeSep: 46, rankSep: 132, edgeSep: 36, nodeDimensionsIncludeLabels: false, fit: true, padding: 64 } as cytoscape.LayoutOptions);
+        ? ({ name: "concentric", eles, animate: false, fit: true, padding: density.padding, minNodeSpacing: density.minNodeSpacing, concentric: (node: cytoscape.NodeSingular) => node.indegree(false), levelWidth: () => 1 } as cytoscape.LayoutOptions)
+      : ({ name: "dagre", eles, rankDir: "TB", ranker: "tight-tree", nodeSep: density.nodeSep, rankSep: density.rankSep, edgeSep: density.edgeSep, nodeDimensionsIncludeLabels: false, fit: true, padding: density.padding } as cytoscape.LayoutOptions);
 
   try {
     cy.layout(config).run();
@@ -116,10 +129,53 @@ export function runLayout(cy: cytoscape.Core | null, layout: LayoutId): void {
   }
 }
 
+export function applyDensity(cy: cytoscape.Core | null, previousDensity: number, nextDensity: number): void {
+  if (!cy) return;
+
+  const previousScale = densityScale(previousDensity);
+  const nextScale = densityScale(nextDensity);
+  if (Math.abs(previousScale - nextScale) < 0.001) return;
+
+  const visibleNodes = cy.nodes().not(".is-filtered, .n-repo");
+  if (visibleNodes.empty()) return;
+
+  const bounds = visibleNodes.boundingBox({ includeLabels: false, includeOverlays: false });
+  const centerX = bounds.x1 + Math.max(1, bounds.w) / 2;
+  const centerY = bounds.y1 + Math.max(1, bounds.h) / 2;
+  const ratio = nextScale / previousScale;
+
+  cy.batch(() => {
+    visibleNodes.forEach((node) => {
+      const position = node.position();
+      node.position({
+        x: centerX + (position.x - centerX) * ratio,
+        y: centerY + (position.y - centerY) * ratio,
+      });
+    });
+  });
+}
+
+function densityOptions(value: number): { idealEdgeLength: number; nodeRepulsion: number; minNodeSpacing: number; nodeSep: number; rankSep: number; edgeSep: number; padding: number } {
+  const density = clamp(value, 0, 1);
+  return {
+    idealEdgeLength: lerp(10, 268, density),
+    nodeRepulsion: lerp(110, 15750, density),
+    minNodeSpacing: lerp(1, 100, density),
+    nodeSep: lerp(1, 110, density),
+    rankSep: lerp(6, 278, density),
+    edgeSep: lerp(1, 78, density),
+    padding: lerp(4, 127, density),
+  };
+}
+
+function densityScale(value: number): number {
+  return lerp(0.04, 2.07, clamp(value, 0, 1));
+}
+
 export function applyVisibility(cy: cytoscape.Core | null, filterState: FilterState): void {
   if (!cy) return;
 
-  const { kindFilters, repoFilters, showExternal } = filterState;
+  const { kindFilters, repoFilters, showExternal, focusIds } = filterState;
 
   cy.batch(() => {
     cy.nodes().forEach((node) => {
@@ -132,9 +188,11 @@ export function applyVisibility(cy: cytoscape.Core | null, filterState: FilterSt
         const kinds = String(node.data("kinds") || "").split(/\s+/).filter(Boolean) as ProjectKind[];
         const repoId = String(node.data("parent") || "");
         visible = repoFilters[repoId] !== false && effectiveProjectKinds(kinds).some((kind) => kindFilters[kind] !== false);
+        if (visible && focusIds) visible = focusIds.has(node.id());
       } else if (type === "package") {
         const classification = node.data("classification");
         if (classification !== "internal" && !showExternal) visible = false;
+        if (visible && focusIds) visible = focusIds.has(node.id());
       }
 
       node.toggleClass("is-filtered", !visible);
@@ -178,14 +236,7 @@ export function fitGraph(cy: cytoscape.Core | null, leftInset = 0): void {
 export function applySelection(cy: cytoscape.Core | null, model: GraphModel | null, selectionId: string | null): void {
   if (!cy) return;
 
-  // Restore nodes that were temporarily removed from their compound parent
-  cy.nodes().forEach((node) => {
-    const savedParent = node.data("_sp") as string | undefined;
-    if (savedParent) {
-      node.move({ parent: savedParent });
-      node.removeData("_sp");
-    }
-  });
+  restoreCompoundParents(cy);
 
   cy.elements().removeClass("dim hilite ancestor descendant");
   cy.elements().unselect();
@@ -336,10 +387,14 @@ function fitElementsInAvailableViewport(
       x: viewportCenterX - boundsCenterX * zoom,
       y: viewportCenterY - boundsCenterY * zoom,
     },
-    duration: 220,
+    duration: 320,
   });
 }
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function lerp(min: number, max: number, value: number): number {
+  return min + (max - min) * value;
 }

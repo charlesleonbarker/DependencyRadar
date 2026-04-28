@@ -1,13 +1,14 @@
-import type { PropsWithChildren } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 
 interface ModalProps extends PropsWithChildren {
   open: boolean;
   onClose(): void;
   title: string;
   eyebrow?: string;
+  headerSlot?: ReactNode;
 }
 
-export function Modal({ open, onClose, title, eyebrow, children }: ModalProps) {
+export function Modal({ open, onClose, title, eyebrow, headerSlot, children }: ModalProps) {
   if (!open) return null;
 
   return (
@@ -18,9 +19,12 @@ export function Modal({ open, onClose, title, eyebrow, children }: ModalProps) {
             {eyebrow ? <p className="eyebrow-mini">{eyebrow}</p> : null}
             <h2 className="modal-title">{title}</h2>
           </div>
-          <button className="ghost-button" type="button" onClick={onClose}>
-            Close
-          </button>
+          <div className="modal-header-actions">
+            {headerSlot}
+            <button className="ghost-button" type="button" onClick={onClose}>
+              Close
+            </button>
+          </div>
         </div>
         <div className="modal-body">{children}</div>
       </div>

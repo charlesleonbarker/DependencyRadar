@@ -1,4 +1,4 @@
-import type { LayoutId } from "../graph/cytoscapeModel";
+import type { LayoutId, ViewOptions } from "../graph/cytoscapeModel";
 import { PortalTooltip } from "./PortalTooltip";
 
 const LAYOUT_OPTIONS: Array<{ id: LayoutId; label: string; note: string }> = [
@@ -9,21 +9,16 @@ const LAYOUT_OPTIONS: Array<{ id: LayoutId; label: string; note: string }> = [
 
 interface BottomControlsProps {
   layout: LayoutId;
-  nodeScale: number;
   groupByRepo: boolean;
+  viewOptions: ViewOptions;
   setLayout(layout: LayoutId): void;
-  setNodeScale(update: (current: number) => number): void;
   setGroupByRepo(value: boolean): void;
+  setViewOptions(update: (current: ViewOptions) => ViewOptions): void;
   onHelpOpen(): void;
 }
 
-const MIN_NODE_SCALE = 0.5;
-const MAX_NODE_SCALE = 1.5;
-const NODE_SCALE_STEP = 0.25;
-
-export function BottomControls({ layout, nodeScale, groupByRepo, setLayout, setNodeScale, setGroupByRepo, onHelpOpen }: BottomControlsProps) {
-  const decreaseDisabled = nodeScale <= MIN_NODE_SCALE;
-  const increaseDisabled = nodeScale >= MAX_NODE_SCALE;
+export function BottomControls({ layout, groupByRepo, viewOptions, setLayout, setGroupByRepo, setViewOptions, onHelpOpen }: BottomControlsProps) {
+  const updateDensity = (density: number) => setViewOptions((current) => ({ ...current, density }));
 
   return (
     <div className="bottom-right-dock">
@@ -42,33 +37,21 @@ export function BottomControls({ layout, nodeScale, groupByRepo, setLayout, setN
           Repositories
         </button>
       </PortalTooltip>
-      <div className="scale-controls dock-panel" aria-label="Node scale controls">
-        <PortalTooltip text="Make graph nodes smaller without changing filters or selection.">
-          <button
-            className="scale-button"
-            type="button"
-            aria-label="Make graph nodes smaller"
-            disabled={decreaseDisabled}
-            onClick={() => setNodeScale((current) => Math.max(MIN_NODE_SCALE, current - NODE_SCALE_STEP))}
-          >
-            -
-          </button>
-        </PortalTooltip>
-        <PortalTooltip text="Current graph node scale">
-          <span className="scale-value">{Math.round(nodeScale * 100)}%</span>
-        </PortalTooltip>
-        <PortalTooltip text="Make graph nodes larger without changing filters or selection.">
-          <button
-            className="scale-button"
-            type="button"
-            aria-label="Make graph nodes larger"
-            disabled={increaseDisabled}
-            onClick={() => setNodeScale((current) => Math.min(MAX_NODE_SCALE, current + NODE_SCALE_STEP))}
-          >
-            +
-          </button>
-        </PortalTooltip>
+
+      <div className="view-control-panel dock-panel" aria-label="Graph density control">
+        <label className="view-control-field">
+          <span>Density</span>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={1 - viewOptions.density}
+            onChange={(event) => updateDensity(1 - Number(event.target.value))}
+          />
+        </label>
       </div>
+
       <div className="layout-toggle dock-panel">
         {LAYOUT_OPTIONS.map((option) => (
           <PortalTooltip key={option.id} text={option.note}>

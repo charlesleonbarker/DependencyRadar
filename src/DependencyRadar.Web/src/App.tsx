@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { DependencyRadarGraph, GraphSummary, MonitorStatus, ProjectKind } from "./api/types";
 import { apiUrl, fetchGraph, fetchStatus } from "./api/client";
 import { BottomControls } from "./components/BottomControls";
@@ -9,7 +9,10 @@ import { SearchFilterDock } from "./components/SearchFilterDock";
 import { SelectionPopover } from "./components/SelectionPopover";
 import { buildModel, describeSelection, type GraphModel } from "./domain/graphModel";
 import { DEFAULT_KINDS } from "./domain/projectKinds";
-import type { FilterState, LayoutId } from "./graph/cytoscapeModel";
+import { DEFAULT_VIEW_OPTIONS, type FilterState, type LayoutId, type ViewOptions } from "./graph/cytoscapeModel";
+import { ColorSchemeSelect } from "./components/ColorSchemeSelect";
+import type { ColorSchemeId } from "./theme/colorSchemes";
+import { readColorSchemeCookie, writeColorSchemeCookie } from "./theme/colorSchemes";
 
 const defaultKindFilters = Object.fromEntries(DEFAULT_KINDS.map((kind) => [kind, true])) as Record<ProjectKind, boolean>;
 
@@ -40,16 +43,24 @@ export function App() {
   const [hoverPathIds, setHoverPathIds] = useState<string[][] | null>(null);
   const [layout, setLayout] = useState<LayoutId>("fcose");
   const [layoutRunKey, setLayoutRunKey] = useState(0);
-  const [nodeScale, setNodeScale] = useState(1);
+  const [viewOptions, setViewOptions] = useState<ViewOptions>(DEFAULT_VIEW_OPTIONS);
   const [groupByRepo, setGroupByRepo] = useState(true);
+  const [colorScheme, setColorSchemeState] = useState<ColorSchemeId>(() => readColorSchemeCookie());
   const [searchText, setSearchText] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [kindFilters, setKindFilters] = useState(defaultKindFilters);
   const [repoFilters, setRepoFilters] = useState<Record<string, boolean>>({});
   const [showPackages, setShowPackages] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const [viewportResetKey, setViewportResetKey] = useState(0);
+  const [selectionFitInset, setSelectionFitInset] = useState(0);
   const historyReady = useRef(false);
+
+  const setColorScheme = useCallback((nextScheme: ColorSchemeId) => {
+    setColorSchemeState(nextScheme);
+    writeColorSchemeCookie(nextScheme);
+  }, []);
 
   const model = useMemo(() => (graph ? buildModel(graph) : null), [graph]);
   const selection = useMemo(() => (model ? describeSelection(model, selectionId) : null), [model, selectionId]);
@@ -94,13 +105,23 @@ export function App() {
   const closeSelection = useCallback(() => {
     selectNode(null);
     setHoverPathIds(null);
+    setFocusMode(false);
     setViewportResetKey((key) => key + 1);
+    setSelectionFitInset(0);
   }, [selectNode]);
+
+  const toggleFocusMode = useCallback(() => {
+    setFocusMode((prev) => !prev);
+  }, []);
 
   const chooseLayout = useCallback((nextLayout: LayoutId) => {
     setLayout(nextLayout);
     setLayoutRunKey((key) => key + 1);
   }, []);
+
+  useLayoutEffect(() => {
+    document.documentElement.dataset.colorScheme = colorScheme;
+  }, [colorScheme]);
 
   useEffect(() => {
     const initialSelectionId = selectionFromUrl();
@@ -132,6 +153,16 @@ export function App() {
   }, [model, selectionId]);
 
   useEffect(() => {
+    if (!selection) {
+      setSelectionFitInset(0);
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setSelectionFitInset(664), 320);
+    return () => window.clearTimeout(timeoutId);
+  }, [selection]);
+
+  useEffect(() => {
     if (!graph) return;
     setRepoFilters((current) => {
       const next = Object.fromEntries(graph.repos.map((repo) => [repo.id, current[repo.id] !== false]));
@@ -155,11 +186,22 @@ export function App() {
     packageCount: graph?.packages.length || 0,
     edgeCount: graph?.edges.length || 0,
   };
-  const filterState: FilterState = useMemo(() => ({ kindFilters, repoFilters, showExternal: showPackages }), [kindFilters, repoFilters, showPackages]);
+  const focusIds = useMemo<Set<string> | null>(() => {
+    if (!focusMode || !selectionId || !model) return null;
+    const graphSelectionId = model.graphIdForSelection(selectionId);
+    const ancestors = model.reverseReach(selectionId);
+    const descendants = model.forwardReach(selectionId);
+    return new Set([selectionId, graphSelectionId, ...model.neighborhood(selectionId), ...ancestors, ...descendants]);
+  }, [focusMode, selectionId, model]);
+
+  const filterState: FilterState = useMemo(
+    () => ({ kindFilters, repoFilters, showExternal: showPackages, focusIds }),
+    [kindFilters, repoFilters, showPackages, focusIds],
+  );
 
   return (
     <>
-      <div className="app-shell">
+      <div className="app-shell" data-color-scheme={colorScheme}>
         <div className="left-workspace">
           <SearchFilterDock
             searchText={searchText}
@@ -187,7 +229,9 @@ export function App() {
             selection={selection}
             showExternal={showPackages}
             kindFilters={kindFilters}
+            focusMode={focusMode}
             onClose={closeSelection}
+            onFocusToggle={toggleFocusMode}
             onSelect={selectNode}
             onHoverPath={setHoverPathIds}
           />
@@ -207,20 +251,27 @@ export function App() {
                 layoutRunKey={layoutRunKey}
                 groupByRepo={groupByRepo}
                 filterState={filterState}
+                viewOptions={viewOptions}
                 searchText={searchText}
                 status={status}
-                nodeScale={nodeScale}
-                leftInset={selection ? 664 : 0}
+                leftInset={selectionFitInset}
+                styleKey={colorScheme}
               />
             </div>
 
-            <BottomControls layout={layout} nodeScale={nodeScale} groupByRepo={groupByRepo} setLayout={chooseLayout} setNodeScale={setNodeScale} setGroupByRepo={setGroupByRepo} onHelpOpen={() => setHelpOpen(true)} />
+            <BottomControls layout={layout} groupByRepo={groupByRepo} viewOptions={viewOptions} setLayout={chooseLayout} setGroupByRepo={setGroupByRepo} setViewOptions={setViewOptions} onHelpOpen={() => setHelpOpen(true)} />
             {error ? <div className="map-status map-status-error"><strong>Frontend error</strong><span>{error}</span></div> : null}
           </div>
         </main>
       </div>
 
-      <Modal open={helpOpen} onClose={() => setHelpOpen(false)} eyebrow="Dependency Radar" title=".NET Impact Visualiser">
+      <Modal
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        eyebrow="Dependency Radar"
+        title=".NET Impact Visualiser"
+        headerSlot={<ColorSchemeSelect value={colorScheme} onChange={setColorScheme} />}
+      >
         <HelpContent status={status} counts={counts} />
       </Modal>
     </>

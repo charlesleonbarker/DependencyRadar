@@ -1,11 +1,64 @@
 import type cytoscape from "cytoscape";
 
-export const GRAPH_STYLE: cytoscape.StylesheetJson = [
+interface GraphPalette {
+  ink: string;
+  muted: string;
+  accent: string;
+  red: string;
+  green: string;
+  teal: string;
+  kindLibrary: string;
+  kindTest: string;
+  kindWeb: string;
+  kindBlazor: string;
+  kindService: string;
+  kindNuget: string;
+}
+
+const DEFAULT_PALETTE: GraphPalette = {
+  ink: "#1b1f23",
+  muted: "#64748b",
+  accent: "#2563eb",
+  red: "#dc2626",
+  green: "#16a34a",
+  teal: "#0f766e",
+  kindLibrary: "#94a3b8",
+  kindTest: "#8b5cf6",
+  kindWeb: "#f59e0b",
+  kindBlazor: "#ec4899",
+  kindService: "#14b8a6",
+  kindNuget: "#16a34a",
+};
+
+export function graphStyleFromElement(element: Element): cytoscape.StylesheetJson {
+  const styles = getComputedStyle(element);
+  const cssColor = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+
+  return graphStyle({
+    ink: cssColor("--ink", DEFAULT_PALETTE.ink),
+    muted: cssColor("--muted", DEFAULT_PALETTE.muted),
+    accent: cssColor("--accent", DEFAULT_PALETTE.accent),
+    red: cssColor("--red", DEFAULT_PALETTE.red),
+    green: cssColor("--green", DEFAULT_PALETTE.green),
+    teal: cssColor("--teal", DEFAULT_PALETTE.teal),
+    kindLibrary: cssColor("--kind-library", DEFAULT_PALETTE.kindLibrary),
+    kindTest: cssColor("--kind-test", DEFAULT_PALETTE.kindTest),
+    kindWeb: cssColor("--kind-web", DEFAULT_PALETTE.kindWeb),
+    kindBlazor: cssColor("--kind-blazor", DEFAULT_PALETTE.kindBlazor),
+    kindService: cssColor("--kind-service", DEFAULT_PALETTE.kindService),
+    kindNuget: cssColor("--kind-nuget", DEFAULT_PALETTE.kindNuget),
+  });
+}
+
+export const GRAPH_STYLE: cytoscape.StylesheetJson = graphStyle(DEFAULT_PALETTE);
+
+function graphStyle(palette: GraphPalette): cytoscape.StylesheetJson {
+  return [
   {
     selector: "node",
     style: {
       label: "data(label)",
-      color: "#1b1f23",
+      color: palette.ink,
       "font-size": 14,
       "min-zoomed-font-size": 7,
       "font-family": "Inter, Avenir Next, Trebuchet MS, Segoe UI, sans-serif",
@@ -13,11 +66,14 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
       "text-halign": "center",
       "text-margin-y": 7,
       "text-outline-width": 0,
-      "background-color": "#cbd5e1",
+      "background-color": palette.muted,
       width: 30,
       height: 30,
       "border-width": 1.5,
-      "border-color": "rgba(15, 23, 42, 0.22)",
+      "border-color": palette.muted,
+      "transition-property": "opacity, border-width, border-color, background-color",
+      "transition-duration": 120,
+      "transition-timing-function": "ease-out",
     },
   },
   {
@@ -25,9 +81,9 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
     style: {
       shape: "round-rectangle",
       "background-opacity": 0.04,
-      "background-color": "#2563eb",
+      "background-color": palette.accent,
       "border-style": "dashed",
-      "border-color": "#2563eb",
+      "border-color": palette.accent,
       "border-width": 2.5,
       "border-opacity": 0.45,
       "text-valign": "top",
@@ -37,7 +93,7 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
       "font-weight": 700,
       "text-transform": "uppercase",
       "font-family": "Inter, Avenir Next, Trebuchet MS, Segoe UI, sans-serif",
-      color: "#2563eb",
+      color: palette.accent,
       padding: "38px",
       "text-margin-x": 0,
       "text-margin-y": 14,
@@ -45,16 +101,16 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
       "text-wrap": "wrap",
     },
   },
-  { selector: ".n-project", style: { shape: "round-rectangle", "background-color": "#cbd5e1", width: 48, height: 32 } },
-  { selector: ".kind-library", style: { "background-color": "#94a3b8" } },
-  { selector: ".kind-test", style: { "background-color": "#8b5cf6" } },
-  { selector: ".kind-web", style: { "background-color": "#f59e0b" } },
-  { selector: ".kind-blazor", style: { "background-color": "#ec4899" } },
-  { selector: ".kind-service", style: { "background-color": "#14b8a6" } },
-  { selector: ".kind-nuget-producing", style: { "border-color": "#16a34a", "border-width": 3 } },
+  { selector: ".n-project", style: { shape: "round-rectangle", "background-color": palette.muted, width: 48, height: 32 } },
+  { selector: ".kind-library", style: { "background-color": palette.kindLibrary } },
+  { selector: ".kind-test", style: { "background-color": palette.kindTest } },
+  { selector: ".kind-web", style: { "background-color": palette.kindWeb } },
+  { selector: ".kind-blazor", style: { "background-color": palette.kindBlazor } },
+  { selector: ".kind-service", style: { "background-color": palette.kindService } },
+  { selector: ".kind-nuget-producing", style: { "border-color": palette.kindNuget, "border-width": 3 } },
   { selector: ".n-package", style: { shape: "diamond", width: 30, height: 30 } },
-  { selector: ".pkg-internal", style: { "background-color": "#16a34a", color: "#14532d" } },
-  { selector: ".pkg-unknown", style: { "background-color": "#64748b", opacity: 0.92 } },
+  { selector: ".pkg-internal", style: { "background-color": palette.kindNuget, color: palette.ink } },
+  { selector: ".pkg-unknown", style: { "background-color": palette.muted, opacity: 0.92 } },
   {
     selector: "edge",
     style: {
@@ -67,15 +123,18 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
       "overlay-opacity": 0,
       "source-distance-from-node": 3,
       "target-distance-from-node": 5,
+      "transition-property": "opacity, width, line-color, target-arrow-color",
+      "transition-duration": 120,
+      "transition-timing-function": "ease-out",
     },
   },
-  { selector: ".e-projectRef", style: { width: 3, "line-color": "#0f766e", "target-arrow-color": "#0f766e", "target-arrow-shape": "triangle" } },
-  { selector: ".e-packageRef", style: { width: 2.5, "line-color": "#dc2626", "target-arrow-color": "#dc2626", "target-arrow-shape": "vee" } },
-  { selector: ".e-producedBy", style: { width: 2.3, "line-color": "#16a34a", "target-arrow-color": "#16a34a", "target-arrow-shape": "triangle", "line-style": "dotted" } },
+  { selector: ".e-projectRef", style: { width: 3, "line-color": palette.teal, "target-arrow-color": palette.teal, "target-arrow-shape": "triangle" } },
+  { selector: ".e-packageRef", style: { width: 2.5, "line-color": palette.red, "target-arrow-color": palette.red, "target-arrow-shape": "vee" } },
+  { selector: ".e-producedBy", style: { width: 2.3, "line-color": palette.green, "target-arrow-color": palette.green, "target-arrow-shape": "triangle", "line-style": "dotted" } },
   {
     selector: ".n-repo:active",
     style: {
-      "overlay-color": "#2563eb",
+      "overlay-color": palette.accent,
       "overlay-opacity": 0.07,
       "overlay-padding": 6,
     },
@@ -87,37 +146,28 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
     },
   },
   { selector: ".is-filtered", style: { display: "none" } },
-  { selector: ".dim", style: { opacity: 0.07 } },
+  { selector: ".dim", style: { opacity: 0.09 } },
   { selector: "edge.dim", style: { "target-arrow-shape": "none" } },
   { selector: ".hilite", style: { opacity: 1, "z-index": 20 } },
   {
     selector: ".ancestor",
     style: {
-      "border-color": "#dc2626",
+      "border-color": palette.red,
       "border-width": 10,
-      "underlay-color": "rgba(220, 38, 38, 0.35)",
-      "underlay-shape": "ellipse",
-      "underlay-padding": 14,
     },
   },
   {
     selector: ".descendant",
     style: {
-      "border-color": "#0f766e",
+      "border-color": palette.teal,
       "border-width": 10,
-      "underlay-color": "rgba(15, 118, 110, 0.35)",
-      "underlay-shape": "ellipse",
-      "underlay-padding": 14,
     },
   },
   {
     selector: ":selected",
     style: {
-      "border-color": "#2563eb",
+      "border-color": palette.accent,
       "border-width": 12,
-      "underlay-color": "rgba(37, 99, 235, 0.40)",
-      "underlay-shape": "ellipse",
-      "underlay-padding": 18,
       "z-index": 70,
       "overlay-opacity": 0,
     },
@@ -143,4 +193,5 @@ export const GRAPH_STYLE: cytoscape.StylesheetJson = [
     },
   },
   { selector: "edge.sidebar-focus", style: { opacity: 1, width: 4, "z-index": 70 } },
-];
+  ];
+}

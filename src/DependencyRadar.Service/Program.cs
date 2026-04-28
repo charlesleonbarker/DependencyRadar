@@ -32,6 +32,18 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 app.UseCors();
+app.Use(async (context, next) =>
+{
+    if (HttpMethods.IsGet(context.Request.Method)
+        && string.Equals(context.Request.Path.Value, "/tests", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.Redirect("/tests/");
+        return;
+    }
+
+    await next(context);
+});
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
@@ -68,6 +80,7 @@ app.MapGet("/api/updates", async (HttpContext context, MonitorState state) =>
     }
 });
 
+app.MapFallbackToFile("/tests/{*path:nonfile}", "tests/index.html");
 app.MapFallbackToFile("index.html");
 
 app.Run();

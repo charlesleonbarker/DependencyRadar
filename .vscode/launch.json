@@ -27,6 +27,15 @@
       "url": "http://localhost:5173",
       "webRoot": "${workspaceFolder}/src/DependencyRadar.Web/src",
       "sourceMaps": true
+    },
+    {
+      "name": "Dependency Radar: Storybook (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "preLaunchTask": "storybook: dev",
+      "url": "http://localhost:6006",
+      "webRoot": "${workspaceFolder}/src/DependencyRadar.Web/src",
+      "sourceMaps": true
     }
   ],
   "compounds": [
@@ -35,6 +44,15 @@
       "configurations": [
         "Dependency Radar: Backend (.NET)",
         "Dependency Radar: Web (Chrome)"
+      ],
+      "stopAll": true
+    },
+    {
+      "name": "Dependency Radar: Full Stack + Storybook",
+      "configurations": [
+        "Dependency Radar: Backend (.NET)",
+        "Dependency Radar: Web (Chrome)",
+        "Dependency Radar: Storybook (Chrome)"
       ],
       "stopAll": true
     }

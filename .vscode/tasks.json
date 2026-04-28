@@ -73,6 +73,34 @@
         "panel": "dedicated",
         "clear": true
       }
+    },
+    {
+      "label": "storybook: dev",
+      "type": "process",
+      "command": "npm",
+      "args": [
+        "run",
+        "storybook",
+        "--prefix",
+        "${workspaceFolder}/src/DependencyRadar.Web"
+      ],
+      "dependsOn": "web: install",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "storybook",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Starting",
+          "endsPattern": "Local:\\s+http://localhost:6006/"
+        }
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "clear": true
+      }
     }
   ]
 }
