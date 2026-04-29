@@ -87,7 +87,7 @@ export function SelectionPopover({ selection, showExternal, kindFilters, focusMo
 
 function ItemDetailCard({ paths, pathVersions, referenceVersions, selectedId, allPathIds, onHoverPath }: {
   paths: AnyGraphNode[][];
-  pathVersions?: Array<string | undefined>;
+  pathVersions?: Array<Record<string, string>>;
   referenceVersions?: string[];
   selectedId: string;
   allPathIds: string[][];
@@ -95,13 +95,12 @@ function ItemDetailCard({ paths, pathVersions, referenceVersions, selectedId, al
 }) {
   if (paths.length === 0) return null;
   const multiRoute = paths.length > 1;
-  const fallbackVersion = referenceVersions?.[0];
   return (
     <div className="item-detail-card" onMouseLeave={() => onHoverPath(allPathIds)}>
       <div className="detail-routes">
         {multiRoute && <span className="detail-routes-label">{paths.length} routes</span>}
         {paths.map((path, i) => {
-          const version = pathVersions?.[i] ?? fallbackVersion;
+          const stepVersions = pathVersions?.[i] ?? {};
           const routeIds = path.map((n) => n.id).filter(Boolean);
           const anchoredIds = routeIds.includes(selectedId) ? routeIds : [selectedId, ...routeIds];
           return (
@@ -111,13 +110,26 @@ function ItemDetailCard({ paths, pathVersions, referenceVersions, selectedId, al
               onMouseEnter={() => onHoverPath([anchoredIds])}
             >
               <div className="path-chain">
-                {path.map((node, j) => (
-                  <span key={`${node.id}-${j}`} className="path-step">
-                    {j > 0 && <span className="path-arrow">→</span>}
-                    <span className="path-node"><DottedName value={node.name} /></span>
-                  </span>
-                ))}
-                {version && <span className="path-version-chip">v{version}</span>}
+                {path.map((node, j) => {
+                  const version = stepVersions[node.id];
+                  const referencer = version ? (j > 0 ? path[j - 1] : path[j + 1]) : undefined;
+                  const tooltip = referencer
+                    ? `${referencer.name} references ${node.name} at v${version}`
+                    : version ? `v${version}` : undefined;
+                  return (
+                    <span key={`${node.id}-${j}`} className="path-step">
+                      {j > 0 && <span className="path-arrow">→</span>}
+                      <span className="path-node">
+                        <DottedName value={node.name} />
+                        {version && tooltip && (
+                          <PortalTooltip text={tooltip}>
+                            <span className="path-version-chip">v{version}</span>
+                          </PortalTooltip>
+                        )}
+                      </span>
+                    </span>
+                  );
+                })}
               </div>
             </div>
           );
@@ -150,7 +162,7 @@ function ImpactRow({ impact, selectedId, cardControl, onHoverPath }: {
       >
         <span className="impact-link-main">
           <span className="link-name"><DottedName value={impact.project.name} /></span>
-          <RelationBadge routeKind={impact.routeKind} depth={impact.depth} />
+          <RelationBadge routeKind={impact.routeKind} depth={impact.depth} hasAlternativeRoute={impact.hasAlternativeRoute} />
         </span>
       </button>
       {isOpen ? (
@@ -190,17 +202,15 @@ function DependencyRow({ dep, selectedId, selectedName, cardControl, onHoverPath
         onBlur={() => { if (!isOpen) onHoverPath(null); }}
       >
         <span className="impact-link-main">
-          <span className="link-name"><DottedName value={dep.node.name} /></span>
-          <span className="impact-link-end">
-            {dep.referenceVersions?.length ? (
-              <PortalTooltip text={`${selectedName} uses ${dep.node.name} at ${formatVersions(dep.referenceVersions)}`}>
-                <span className="version-chip used">
-                  {formatVersions(dep.referenceVersions)}
-                </span>
+          <span className="link-name">
+            <DottedName value={dep.node.name} />
+            {dep.referenceVersions?.map((v) => (
+              <PortalTooltip key={v} text={`${selectedName} uses ${dep.node.name} v${v}`}>
+                <span className="version-chip used">v{v}</span>
               </PortalTooltip>
-            ) : null}
-            <RelationBadge routeKind={dep.routeKind} depth={dep.depth} />
+            ))}
           </span>
+          <RelationBadge routeKind={dep.routeKind} depth={dep.depth} hasAlternativeRoute={dep.hasAlternativeRoute} />
         </span>
       </button>
       {isOpen ? (
@@ -397,10 +407,19 @@ function DependencyGroups({ groups, selectedId, selectedName, cardControl, onHov
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
-function RelationBadge({ routeKind, depth }: { routeKind: RouteKind; depth: number }) {
-  const isDirect = routeKind.startsWith("direct");
-  if (isDirect) return <span className="route-badge direct">Direct</span>;
-  return <span className="route-badge indirect">Indirect ({depth})</span>;
+function RelationBadge({ routeKind, depth, hasAlternativeRoute }: { routeKind: RouteKind; depth: number; hasAlternativeRoute: boolean }) {
+  if (routeKind === "direct-project") {
+    return (
+      <>
+        <span className="route-badge direct">Direct</span>
+        {hasAlternativeRoute && <span className="route-badge also-indirect">+ Indirect</span>}
+      </>
+    );
+  }
+  if (routeKind === "direct-package") {
+    return <span className="route-badge package-dep">Package</span>;
+  }
+  return <span className="route-badge indirect">Indirect · {depth}</span>;
 }
 
 function CollapsibleSection({ title, count, defaultOpen, children }: { title: string; count: number; defaultOpen: boolean; children: React.ReactNode }) {
@@ -420,13 +439,19 @@ function CollapsibleSection({ title, count, defaultOpen, children }: { title: st
 }
 
 function NodeLabels({ node, producedByName, producedPackages }: { node: AnyGraphNode; producedByName?: string; producedPackages?: PackageNode[] }) {
-  const labels = nodeLabels(node, producedByName, producedPackages);
+  const { labels, versionGroups } = nodeLabels(node, producedByName, producedPackages);
   const kindLabels = node.type === "project" ? effectiveProjectKinds(node.kinds) : [];
-  if (labels.length === 0 && kindLabels.length === 0) return null;
+  if (labels.length === 0 && kindLabels.length === 0 && versionGroups.length === 0) return null;
   return (
     <div className="node-labels">
       {kindLabels.map((kind) => <span key={kind} className={`pill ${kind}`}>{KIND_SHORT[kind]}</span>)}
       {labels.map((label) => <span key={label} className="node-label">{label}</span>)}
+      {versionGroups.map(({ prefix, versions }) => (
+        <span key={prefix} className="node-label-versions">
+          {prefix && <span className="node-label-prefix">{prefix}</span>}
+          {versions.map((v) => <span key={v} className="version-chip">v{v}</span>)}
+        </span>
+      ))}
     </div>
   );
 }
@@ -478,28 +503,32 @@ function pathIdsFor(paths: AnyGraphNode[][], fallbackId: string, selectedId: str
   });
 }
 
-function nodeLabels(node: AnyGraphNode, producedByName?: string, producedPackages?: PackageNode[]): string[] {
+interface VersionGroup { prefix: string; versions: string[]; }
+interface NodeLabelResult { labels: string[]; versionGroups: VersionGroup[]; }
+
+function nodeLabels(node: AnyGraphNode, producedByName?: string, producedPackages?: PackageNode[]): NodeLabelResult {
   if (node.type === "project") {
-    const packageVersionLabels = packageLabelsForProject(node, producedPackages);
-    return [
-      ...(node.sdk ? [node.sdk] : []),
-      ...((node.tfms || []).length > 0 ? [node.tfms!.join(", ")] : []),
-      ...packageVersionLabels,
-    ];
+    const versionGroups = packageVersionGroupsForProject(node, producedPackages);
+    const sdkTfm = [node.sdk, (node.tfms || []).join(", ")].filter(Boolean).join(" · ");
+    return { labels: sdkTfm ? [sdkTfm] : [], versionGroups };
   }
   if (node.type === "package") {
-    return [
-      node.classification || "unknown",
-      ...((node.versions || []).length > 0 ? [`${node.versions!.length === 1 ? "Referenced version" : "Referenced versions"} ${node.versions!.join(", ")}`] : ["referenced version unknown"]),
-      ...((node.versions || []).length > 1 ? ["version drift"] : []),
-      ...(producedByName ? [`produced by ${producedByName}`] : []),
-    ];
+    const versions = node.versions || [];
+    return {
+      labels: [
+        node.classification || "unknown",
+        ...(versions.length === 0 ? ["referenced version unknown"] : []),
+        ...(versions.length > 1 ? ["version drift"] : []),
+        ...(producedByName ? [`produced by ${producedByName}`] : []),
+      ],
+      versionGroups: versions.length > 0 ? [{ prefix: "", versions }] : [],
+    };
   }
-  if (node.type === "solution") return ["solution"];
-  return [];
+  if (node.type === "solution") return { labels: ["solution"], versionGroups: [] };
+  return { labels: [], versionGroups: [] };
 }
 
-function packageLabelsForProject(project: ProjectNode, producedPackages?: PackageNode[]): string[] {
+function packageVersionGroupsForProject(project: ProjectNode, producedPackages?: PackageNode[]): VersionGroup[] {
   if (!project.packageId && (!producedPackages || producedPackages.length === 0)) return [];
   const packages = producedPackages && producedPackages.length > 0
     ? producedPackages
@@ -508,8 +537,7 @@ function packageLabelsForProject(project: ProjectNode, producedPackages?: Packag
   return packages.flatMap((pkg) => {
     const v = pkg.versions || [];
     if (v.length === 0) return [];
-    const label = v.length === 1 ? "Referenced version" : "Referenced versions";
-    return [`${includePackageName ? `${pkg.name} ` : ""}${label} ${v.join(", ")}`];
+    return [{ prefix: includePackageName ? pkg.name : "", versions: v }];
   });
 }
 

@@ -869,6 +869,9 @@ button, input { font: inherit; }
 
 .node-labels { margin-top: 12px; }
 
+.node-label-versions { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.node-label-prefix { font-size: 11px; color: var(--muted); }
+
 .node-label {
   display: inline-flex;
   align-items: center;
@@ -1121,6 +1124,19 @@ button, input { font: inherit; }
   color: var(--muted);
 }
 
+.route-badge.package-dep {
+  background: var(--kind-nuget-soft);
+  color: var(--kind-nuget);
+}
+
+.route-badge.also-indirect {
+  background: transparent;
+  color: var(--muted);
+  padding-left: 0;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
 .impact-link.open {
   background: var(--active-bg);
   border-radius: 5px 5px 0 0;
@@ -1128,7 +1144,7 @@ button, input { font: inherit; }
 
 .item-detail-card {
   margin: 0;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 0 0 6px 6px;
   background: var(--panel-strong);
   border: 1px solid var(--active-border);
@@ -1139,8 +1155,6 @@ button, input { font: inherit; }
 .detail-routes {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 8px;
 }
 
 .detail-routes-label {
@@ -1149,11 +1163,19 @@ button, input { font: inherit; }
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin-bottom: 2px;
+  padding: 4px 12px 2px;
+  margin: 0 -12px;
 }
 
 .path-route {
-  padding: 5px 0;
+  padding: 6px 12px;
+  margin: 0 -12px;
+  border-radius: 4px;
+  transition: background 100ms;
+}
+
+.path-route:hover {
+  background: var(--active-bg);
 }
 
 .path-route + .path-route {
@@ -1318,7 +1340,7 @@ button, input { font: inherit; }
 .swatch-repo { width: 24px; height: 16px; border-radius: 6px; border: 2px dashed var(--accent); background: var(--active-bg); }
 .swatch-selected { width: 24px; height: 16px; border-radius: 6px; background: var(--active-bg); border: 3px solid var(--accent); }
 .swatch-ancestor { width: 24px; height: 16px; border-radius: 6px; background: var(--subtle-bg); border: 3px solid var(--red); box-shadow: 0 0 7px color-mix(in srgb, var(--red) 38%, transparent); }
-.swatch-descendant { width: 24px; height: 16px; border-radius: 6px; background: var(--subtle-bg); border: 3px solid var(--teal); box-shadow: 0 0 7px color-mix(in srgb, var(--teal) 38%, transparent); }
+.swatch-descendant { width: 24px; height: 16px; border-radius: 6px; background: var(--subtle-bg); border: 3px solid var(--green); box-shadow: 0 0 7px color-mix(in srgb, var(--green) 38%, transparent); }
 .edge-swatch { position: relative; width: 36px; height: 14px; border-top-width: 3px; border-top-style: solid; transform: translateY(6px); }
 .edge-swatch::after {
   content: "";

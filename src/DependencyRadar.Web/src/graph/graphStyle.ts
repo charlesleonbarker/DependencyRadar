@@ -61,7 +61,7 @@ function graphStyle(palette: GraphPalette): cytoscape.StylesheetJson {
       color: palette.ink,
       "font-size": 14,
       "min-zoomed-font-size": 7,
-      "font-family": "Inter, Avenir Next, Trebuchet MS, Segoe UI, sans-serif",
+      "font-family": "Inter, ui-sans-serif, system-ui, sans-serif",
       "text-valign": "bottom",
       "text-halign": "center",
       "text-margin-y": 7,
@@ -89,10 +89,9 @@ function graphStyle(palette: GraphPalette): cytoscape.StylesheetJson {
       "text-valign": "top",
       "text-halign": "center",
       "text-justification": "center",
-      "font-size": 9,
-      "font-weight": 700,
-      "text-transform": "uppercase",
-      "font-family": "Inter, Avenir Next, Trebuchet MS, Segoe UI, sans-serif",
+      "font-size": 12,
+      "font-weight": 600,
+      "font-family": "Inter, ui-sans-serif, system-ui, sans-serif",
       color: palette.accent,
       padding: "38px",
       "text-margin-x": 0,
@@ -126,6 +125,7 @@ function graphStyle(palette: GraphPalette): cytoscape.StylesheetJson {
       "transition-property": "opacity, width, line-color, target-arrow-color",
       "transition-duration": 120,
       "transition-timing-function": "ease-out",
+      events: "no",
     },
   },
   { selector: ".e-projectRef", style: { width: 3, "line-color": palette.teal, "target-arrow-color": palette.teal, "target-arrow-shape": "triangle" } },
@@ -159,7 +159,7 @@ function graphStyle(palette: GraphPalette): cytoscape.StylesheetJson {
   {
     selector: ".descendant",
     style: {
-      "border-color": palette.teal,
+      "border-color": palette.green,
       "border-width": 10,
     },
   },
@@ -172,13 +172,24 @@ function graphStyle(palette: GraphPalette): cytoscape.StylesheetJson {
       "overlay-opacity": 0,
     },
   },
-  { selector: ".sidebar-muted", style: { opacity: 0.08 } },
+  {
+    selector: ".n-repo:selected",
+    style: {
+      "border-width": 3.5,
+      "border-opacity": 1,
+    },
+  },
+  { selector: ".sidebar-muted", style: { opacity: 0.15 } },
   {
     selector: ".n-repo.sidebar-muted",
     style: {
-      "border-opacity": 0.08,
+      // opacity: 1 prevents the compound node from cascading its opacity down to
+      // child project nodes — without this, children multiply to ~0.006 (invisible).
+      // The repo box appearance is controlled via the individual *-opacity properties below.
+      opacity: 1,
+      "border-opacity": 0.06,
       "background-opacity": 0.01,
-      "text-opacity": 0.18,
+      "text-opacity": 0.12,
     },
   },
   { selector: "edge.sidebar-muted", style: { "target-arrow-shape": "none" } },

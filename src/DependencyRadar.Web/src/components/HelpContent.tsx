@@ -12,7 +12,7 @@ export function HelpContent({ status, counts }: HelpContentProps) {
     <>
       <section className="modal-section">
         <h3>What this is</h3>
-        <p className="muted">Dependency Radar scans configured local repo roots and builds a live dependency map from <code>.csproj</code>, <code>ProjectReference</code>, and <code>PackageReference</code> data. Select any project, repo, or package to see its full blast radius — which projects, tests, and deployables would need attention if that node changes.</p>
+        <p className="muted">Dependency Radar scans mounted repositories and builds a live dependency map from <code>.csproj</code>, <code>ProjectReference</code>, and <code>PackageReference</code> data. Select any project, repo, or package to see its full blast radius — which projects, tests, and deployables would need attention if that node changes.</p>
       </section>
 
       <section className="modal-section">
@@ -88,7 +88,7 @@ export function HelpContent({ status, counts }: HelpContentProps) {
           <MonitorStat label="Edges" value={counts.edgeCount || 0} />
           <span className="monitor-scan">Last scan: {formatDate(status?.lastScanAt)}</span>
         </div>
-        <p className="legend-note">The backend watches configured repo roots and rescans automatically after file changes. The graph updates in the browser via a live event stream.</p>
+        <p className="legend-note">The backend watches mounted repositories and rescans automatically after file changes. The graph updates in the browser via a live event stream.</p>
         {status?.lastError ? <p className="monitor-error">{status.lastError}</p> : null}
       </section>
 

@@ -53,6 +53,7 @@ export function GraphCanvas({
   const modelRef = useRef<GraphModel | null>(model);
   const lastSelectionFitKeyRef = useRef<string | null>(null);
   const lastDensityRef = useRef(viewOptions.density);
+  const lastViewportResetKeyRef = useRef(0);
 
   useEffect(() => {
     modelRef.current = model;
@@ -135,7 +136,8 @@ export function GraphCanvas({
   }, [model, hoverPathIds]);
 
   useEffect(() => {
-    if (viewportResetKey === 0) return;
+    if (viewportResetKey === 0 || viewportResetKey === lastViewportResetKeyRef.current) return;
+    lastViewportResetKeyRef.current = viewportResetKey;
     lastSelectionFitKeyRef.current = null;
     fitGraph(cyRef.current, leftInset);
   }, [viewportResetKey, leftInset]);

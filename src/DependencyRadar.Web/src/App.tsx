@@ -246,7 +246,7 @@ export function App() {
                 selectionId={selectionId}
                 hoverPathIds={hoverPathIds}
                 viewportResetKey={viewportResetKey}
-                onSelectionChange={selectNode}
+                onSelectionChange={(id) => (id === null ? closeSelection() : selectNode(id))}
                 layout={layout}
                 layoutRunKey={layoutRunKey}
                 groupByRepo={groupByRepo}

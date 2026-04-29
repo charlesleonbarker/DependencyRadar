@@ -240,7 +240,10 @@ export function applySelection(cy: cytoscape.Core | null, model: GraphModel | nu
 
   cy.elements().removeClass("dim hilite ancestor descendant");
   cy.elements().unselect();
-  if (!selectionId || !model?.nodesById[selectionId]) return;
+  if (!selectionId || !model?.nodesById[selectionId]) {
+    syncGrabState(cy);
+    return;
+  }
 
   const ancestors = model.reverseReach(selectionId);
   const descendants = model.forwardReach(selectionId);
@@ -282,18 +285,26 @@ export function applySelection(cy: cytoscape.Core | null, model: GraphModel | nu
       node.move({ parent: null });
     }
   });
+
+  syncGrabState(cy);
 }
 
 export function applySidebarHover(cy: cytoscape.Core | null, model: GraphModel | null, pathIds: string[][] | null): void {
   if (!cy) return;
 
   cy.elements().removeClass("sidebar-focus sidebar-muted");
-  if (!model || !pathIds || pathIds.length === 0) return;
+  if (!model || !pathIds || pathIds.length === 0) {
+    syncGrabState(cy);
+    return;
+  }
 
   const graphPaths = pathIds
     .map((path) => path.map((id) => model.graphIdForSelection(id)).filter((id, index, ids) => id && ids.indexOf(id) === index))
     .filter((path) => path.length > 0);
-  if (graphPaths.length === 0) return;
+  if (graphPaths.length === 0) {
+    syncGrabState(cy);
+    return;
+  }
 
   const routeSet = new Set(graphPaths.flat());
   const routePairs = new Set<string>();
@@ -325,6 +336,13 @@ export function applySidebarHover(cy: cytoscape.Core | null, model: GraphModel |
     const inRoute = routePairs.has(pair);
     edge.addClass(inRoute ? "sidebar-focus" : "sidebar-muted");
   });
+
+  syncGrabState(cy);
+}
+
+function syncGrabState(cy: cytoscape.Core): void {
+  cy.nodes(".dim, .sidebar-muted").ungrabify();
+  cy.nodes(":not(.dim):not(.sidebar-muted)").not(".is-filtered").grabify();
 }
 
 function addRoutePairs(routePairs: Set<string>, pathIds: string[]): void {
